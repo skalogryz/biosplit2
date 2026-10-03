@@ -15,8 +15,15 @@ run/main_scene="res://Scenes/Main.tscn"
 
 [display]
 
+window/size/width=960
+window/size/height=540
 window/stretch/mode="2d"
-window/stretch/aspect="expand"
+window/stretch/aspect="keep"
+
+[input_devices]
+
+pointing/emulate_touch_from_mouse=true
+pointing/emulate_mouse_from_touch=false
 
 [mono]
 
@@ -26,9 +33,3 @@ project/assembly_name="Biosplit2"
 
 quality/driver/driver_name="GLES2"
 environment/default_clear_color=Color( 0.03, 0.04, 0.05, 1 )
-
-[input_devices]
-
-pointing/emulate_touch_from_mouse=true
-pointing/emulate_mouse_from_touch=false
-

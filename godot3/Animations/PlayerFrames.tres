@@ -1,0 +1,42 @@
+[gd_resource type="SpriteFrames" load_steps=3 format=2]
+
+[ext_resource path="res://Assets/Sprites/Pers_idle_01.png" type="Texture" id=1]
+[ext_resource path="res://Assets/Sprites/Pers_atak_01.png" type="Texture" id=2]
+
+[resource]
+animations = [ {
+"frames": [ ExtResource( 1 ) ],
+"loop": true,
+"name": "idle",
+"speed": 8.0
+}, {
+"frames": [ ExtResource( 2 ) ],
+"loop": false,
+"name": "attack",
+"speed": 8.0
+}, {
+"frames": [ ExtResource( 2 ) ],
+"loop": false,
+"name": "shoot",
+"speed": 8.0
+}, {
+"frames": [ ExtResource( 1 ) ],
+"loop": true,
+"name": "dodge",
+"speed": 8.0
+}, {
+"frames": [ ExtResource( 1 ) ],
+"loop": true,
+"name": "block",
+"speed": 8.0
+}, {
+"frames": [ ExtResource( 1 ) ],
+"loop": false,
+"name": "hurt",
+"speed": 8.0
+}, {
+"frames": [ ExtResource( 1 ) ],
+"loop": false,
+"name": "defeat",
+"speed": 8.0
+} ]

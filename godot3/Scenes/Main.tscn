@@ -1,13 +1,16 @@
-[gd_scene load_steps=16 format=2]
+[gd_scene load_steps=26 format=2]
 
 [ext_resource path="res://Scripts/Main.cs" type="Script" id=1]
-[ext_resource path="res://Scripts/TouchActionButton.cs" type="Script" id=8]
 [ext_resource path="res://Assets/Fonts/NotoSans-Regular.ttf" type="DynamicFontData" id=2]
 [ext_resource path="res://Assets/UI/Btn_attack_01.png" type="Texture" id=3]
 [ext_resource path="res://Assets/UI/Btn_shot_01.png" type="Texture" id=4]
 [ext_resource path="res://Assets/UI/Btn_uvorot_01.png" type="Texture" id=5]
 [ext_resource path="res://Assets/UI/Btn_block_01.png" type="Texture" id=6]
 [ext_resource path="res://Assets/UI/Btn_inventory_01.png" type="Texture" id=7]
+[ext_resource path="res://Scripts/TouchActionButton.cs" type="Script" id=8]
+[ext_resource path="res://Assets/Background/battle_01.jpg" type="Texture" id=9]
+[ext_resource path="res://Animations/PlayerFrames.tres" type="SpriteFrames" id=10]
+[ext_resource path="res://Animations/EnemyFrames.tres" type="SpriteFrames" id=11]
 
 [sub_resource type="DynamicFont" id=1]
 font_data = ExtResource( 2 )
@@ -28,11 +31,71 @@ bg_color = Color( 0.937, 0.486, 0.212, 1 )
 [sub_resource type="StyleBoxFlat" id=4]
 bg_color = Color( 0.812, 0.357, 0.357, 1 )
 
+[sub_resource type="RectangleShape2D" id=8]
+extents = Vector2( 85.6, 41 )
+
+[sub_resource type="RectangleShape2D" id=9]
+extents = Vector2( 85.6, 41 )
+
+[sub_resource type="RectangleShape2D" id=10]
+extents = Vector2( 85.6, 41 )
+
+[sub_resource type="RectangleShape2D" id=11]
+extents = Vector2( 85.6, 41 )
+
+[sub_resource type="RectangleShape2D" id=12]
+extents = Vector2( 85.6, 41 )
+
 [sub_resource type="StyleBoxFlat" id=7]
 bg_color = Color( 0.04, 0.06, 0.08, 0.98 )
 
+[sub_resource type="RectangleShape2D" id=13]
+extents = Vector2( 186, 22 )
+
+[sub_resource type="RectangleShape2D" id=14]
+extents = Vector2( 186, 21 )
+
 [node name="Main" type="Node2D"]
 script = ExtResource( 1 )
+
+[node name="Background" type="ParallaxBackground" parent="."]
+layer = -10
+
+[node name="Panorama" type="ParallaxLayer" parent="Background"]
+motion_mirroring = Vector2( 960, 0 )
+
+[node name="Image" type="Sprite" parent="Background/Panorama"]
+texture = ExtResource( 9 )
+centered = false
+
+[node name="Combatants" type="Node2D" parent="."]
+
+[node name="Player" type="AnimatedSprite" parent="Combatants"]
+position = Vector2( 374.4, 286.2 )
+scale = Vector2( 1.575, 1.575 )
+frames = ExtResource( 10 )
+animation = "idle"
+playing = true
+
+[node name="BlockShield" type="Line2D" parent="Combatants/Player"]
+visible = false
+points = PoolVector2Array( 7.781, -109.724, 18.019, -108.514, 28.098, -106.351, 37.93, -103.254, 47.429, -99.249, 56.512, -94.374, 65.099, -88.669, 73.113, -82.185, 80.486, -74.98, 87.151, -67.117, 93.052, -58.663, 98.135, -49.695, 102.356, -40.29, 105.678, -30.531, 108.072, -20.504, 109.517, -10.297, 110, 0, 109.517, 10.297, 108.072, 20.504, 105.678, 30.531, 102.356, 40.29, 98.135, 49.695, 93.052, 58.663, 87.151, 67.117, 80.486, 74.98, 73.113, 82.185, 65.099, 88.669, 56.512, 94.374, 47.429, 99.249, 37.93, 103.254, 28.098, 106.351, 18.019, 108.514, 7.781, 109.724 )
+width = 2.54
+default_color = Color( 0.467, 0.733, 1, 1 )
+
+[node name="Enemy" type="AnimatedSprite" parent="Combatants"]
+position = Vector2( 595.2, 286.2 )
+scale = Vector2( 1.575, 1.575 )
+frames = ExtResource( 11 )
+animation = "idle"
+playing = true
+flip_h = true
+
+[node name="ShotTrail" type="Line2D" parent="Combatants"]
+visible = false
+points = PoolVector2Array( 419.4, 261.2, 555.2, 261.2 )
+width = 5.0
+default_color = Color( 0.937, 0.486, 0.212, 1 )
 
 [node name="UI" type="CanvasLayer" parent="."]
 
@@ -143,16 +206,16 @@ stretch_mode = 6
 anchor_right = 1.0
 anchor_bottom = 1.0
 margin_left = 84.0
-mouse_filter = 2
 text = "УДАР [1]"
 align = 1
 valign = 1
 
 [node name="TouchButton" type="TouchScreenButton" parent="UI/HUD/PunchButton"]
-script = ExtResource( 8 )
+position = Vector2( 85.6, 41 )
+shape = SubResource( 8 )
 shape_centered = false
 shape_visible = false
-visibility_mode = 0
+script = ExtResource( 8 )
 
 [node name="ShootButton" type="Control" parent="UI/HUD"]
 anchor_left = 0.2
@@ -184,16 +247,16 @@ stretch_mode = 6
 anchor_right = 1.0
 anchor_bottom = 1.0
 margin_left = 84.0
-mouse_filter = 2
 text = "ВЫСТРЕЛ [2] 30 ЯР"
 align = 1
 valign = 1
 
 [node name="TouchButton" type="TouchScreenButton" parent="UI/HUD/ShootButton"]
-script = ExtResource( 8 )
+position = Vector2( 85.6, 41 )
+shape = SubResource( 9 )
 shape_centered = false
 shape_visible = false
-visibility_mode = 0
+script = ExtResource( 8 )
 
 [node name="DodgeButton" type="Control" parent="UI/HUD"]
 anchor_left = 0.4
@@ -225,16 +288,16 @@ stretch_mode = 6
 anchor_right = 1.0
 anchor_bottom = 1.0
 margin_left = 84.0
-mouse_filter = 2
 text = "УВОРОТ [3]"
 align = 1
 valign = 1
 
 [node name="TouchButton" type="TouchScreenButton" parent="UI/HUD/DodgeButton"]
-script = ExtResource( 8 )
+position = Vector2( 85.6, 41 )
+shape = SubResource( 10 )
 shape_centered = false
 shape_visible = false
-visibility_mode = 0
+script = ExtResource( 8 )
 
 [node name="BlockButton" type="Control" parent="UI/HUD"]
 anchor_left = 0.6
@@ -266,16 +329,16 @@ stretch_mode = 6
 anchor_right = 1.0
 anchor_bottom = 1.0
 margin_left = 84.0
-mouse_filter = 2
 text = "ЗАЩИТА [4]"
 align = 1
 valign = 1
 
 [node name="TouchButton" type="TouchScreenButton" parent="UI/HUD/BlockButton"]
-script = ExtResource( 8 )
+position = Vector2( 85.6, 41 )
+shape = SubResource( 11 )
 shape_centered = false
 shape_visible = false
-visibility_mode = 0
+script = ExtResource( 8 )
 
 [node name="InventoryButton" type="Control" parent="UI/HUD"]
 anchor_left = 0.8
@@ -307,16 +370,16 @@ stretch_mode = 6
 anchor_right = 1.0
 anchor_bottom = 1.0
 margin_left = 84.0
-mouse_filter = 2
 text = "ИНВЕНТАРЬ [I]"
 align = 1
 valign = 1
 
 [node name="TouchButton" type="TouchScreenButton" parent="UI/HUD/InventoryButton"]
-script = ExtResource( 8 )
+position = Vector2( 85.6, 41 )
+shape = SubResource( 12 )
 shape_centered = false
 shape_visible = false
-visibility_mode = 0
+script = ExtResource( 8 )
 
 [node name="Inventory" type="Panel" parent="UI/HUD"]
 anchor_left = 0.5
@@ -356,17 +419,16 @@ mouse_filter = 2
 [node name="Caption" type="Label" parent="UI/HUD/Inventory/HealButton"]
 anchor_right = 1.0
 anchor_bottom = 1.0
-margin_left = 0.0
-mouse_filter = 2
 text = "Аптечка: +40 здоровья"
 align = 1
 valign = 1
 
 [node name="TouchButton" type="TouchScreenButton" parent="UI/HUD/Inventory/HealButton"]
-script = ExtResource( 8 )
+position = Vector2( 186, 22 )
+shape = SubResource( 13 )
 shape_centered = false
 shape_visible = false
-visibility_mode = 0
+script = ExtResource( 8 )
 
 [node name="CloseButton" type="Control" parent="UI/HUD/Inventory"]
 margin_left = 24.0
@@ -383,17 +445,16 @@ mouse_filter = 2
 [node name="Caption" type="Label" parent="UI/HUD/Inventory/CloseButton"]
 anchor_right = 1.0
 anchor_bottom = 1.0
-margin_left = 0.0
-mouse_filter = 2
 text = "Закрыть [I]"
 align = 1
 valign = 1
 
 [node name="TouchButton" type="TouchScreenButton" parent="UI/HUD/Inventory/CloseButton"]
-script = ExtResource( 8 )
+position = Vector2( 186, 21 )
+shape = SubResource( 14 )
 shape_centered = false
 shape_visible = false
-visibility_mode = 0
+script = ExtResource( 8 )
 
 [connection signal="pressed" from="UI/HUD/PunchButton/TouchButton" to="." method="Punch"]
 [connection signal="pressed" from="UI/HUD/ShootButton/TouchButton" to="." method="Shoot"]
@@ -402,4 +463,3 @@ visibility_mode = 0
 [connection signal="pressed" from="UI/HUD/InventoryButton/TouchButton" to="." method="ToggleInventory"]
 [connection signal="pressed" from="UI/HUD/Inventory/HealButton/TouchButton" to="." method="UseKit"]
 [connection signal="pressed" from="UI/HUD/Inventory/CloseButton/TouchButton" to="." method="ToggleInventory"]
-
