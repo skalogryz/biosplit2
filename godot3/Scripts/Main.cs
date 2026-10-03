@@ -15,9 +15,9 @@ public class Main : Node2D
 	private Sprite player, enemy;
 	private Label stats, status, enemyStatus, inventoryText;
 	private ProgressBar healthBar, rageBar, enemyBar;
-	private Button[] actions = new Button[5];
+	private TouchActionButton[] actions = new TouchActionButton[5];
 	private Panel inventory;
-	private Button heal;
+	private TouchActionButton heal;
 	private int hp = 100, rage, enemyHp = 80, enemyMax = 80, wave = 1, coins, kits = 2;
 	private float scroll, targetScroll, cooldown, pose, defense, dodgeCooldown;
 	private float enemyClock, enemyPose, respawn, flash;
@@ -44,10 +44,10 @@ public class Main : Node2D
 		enemyBar = GetNode<ProgressBar>("UI/HUD/EnemyBar");
 		string[] buttonNames = { "PunchButton", "ShootButton", "DodgeButton", "BlockButton", "InventoryButton" };
 		for (int i = 0; i < actions.Length; i++)
-			actions[i] = GetNode<Button>("UI/HUD/" + buttonNames[i]);
+			actions[i] = GetNode<TouchActionButton>("UI/HUD/" + buttonNames[i] + "/TouchButton");
 		inventory = GetNode<Panel>("UI/HUD/Inventory");
 		inventoryText = inventory.GetNode<Label>("InventoryText");
-		heal = inventory.GetNode<Button>("HealButton");
+		heal = inventory.GetNode<TouchActionButton>("HealButton/TouchButton");
 		inventory.Visible = false;
 		Refresh();
 	}
@@ -161,5 +161,6 @@ public class Main : Node2D
 		}
 	}
 }
+
 
 

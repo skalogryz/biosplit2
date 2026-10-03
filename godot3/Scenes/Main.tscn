@@ -1,6 +1,7 @@
-[gd_scene load_steps=15 format=2]
+[gd_scene load_steps=16 format=2]
 
 [ext_resource path="res://Scripts/Main.cs" type="Script" id=1]
+[ext_resource path="res://Scripts/TouchActionButton.cs" type="Script" id=8]
 [ext_resource path="res://Assets/Fonts/NotoSans-Regular.ttf" type="DynamicFontData" id=2]
 [ext_resource path="res://Assets/UI/Btn_attack_01.png" type="Texture" id=3]
 [ext_resource path="res://Assets/UI/Btn_shot_01.png" type="Texture" id=4]
@@ -10,32 +11,30 @@
 
 [sub_resource type="DynamicFont" id=1]
 font_data = ExtResource( 2 )
-size = 16
-
-[sub_resource type="StyleBoxFlat" id=2]
-bg_color = Color( 0.396,0.749,0.58,1 )
-
-[sub_resource type="StyleBoxFlat" id=3]
-bg_color = Color( 0.937,0.486,0.212,1 )
-
-[sub_resource type="StyleBoxFlat" id=4]
-bg_color = Color( 0.812,0.357,0.357,1 )
-
-[sub_resource type="StyleBoxFlat" id=5]
-bg_color = Color( 0.125,0.161,0.188,1 )
 
 [sub_resource type="Theme" id=6]
 default_font = SubResource( 1 )
-Label/colors/font_color = Color( 0.941,0.902,0.843,1 )
+Label/colors/font_color = Color( 0.941, 0.902, 0.843, 1 )
+
+[sub_resource type="StyleBoxFlat" id=2]
+bg_color = Color( 0.396, 0.749, 0.58, 1 )
+
+[sub_resource type="StyleBoxFlat" id=5]
+bg_color = Color( 0.125, 0.161, 0.188, 1 )
+
+[sub_resource type="StyleBoxFlat" id=3]
+bg_color = Color( 0.937, 0.486, 0.212, 1 )
+
+[sub_resource type="StyleBoxFlat" id=4]
+bg_color = Color( 0.812, 0.357, 0.357, 1 )
 
 [sub_resource type="StyleBoxFlat" id=7]
-bg_color = Color( 0.04,0.06,0.08,0.98 )
+bg_color = Color( 0.04, 0.06, 0.08, 0.98 )
 
 [node name="Main" type="Node2D"]
 script = ExtResource( 1 )
 
 [node name="UI" type="CanvasLayer" parent="."]
-
 
 [node name="HUD" type="Control" parent="UI"]
 anchor_right = 1.0
@@ -47,7 +46,7 @@ theme = SubResource( 6 )
 anchor_right = 1.0
 margin_bottom = 110.0
 mouse_filter = 2
-color = Color( 0.02,0.04,0.06,0.86 )
+color = Color( 0.02, 0.04, 0.06, 0.86 )
 
 [node name="BottomBackdrop" type="ColorRect" parent="UI/HUD"]
 anchor_top = 1.0
@@ -55,14 +54,14 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 margin_top = -158.0
 mouse_filter = 2
-color = Color( 0.02,0.04,0.06,0.94 )
+color = Color( 0.02, 0.04, 0.06, 0.94 )
 
 [node name="Stats" type="Label" parent="UI/HUD"]
 margin_left = 24.0
 margin_top = 15.0
 margin_right = 500.0
 margin_bottom = 43.0
-rect_scale = Vector2( 1.5,1.5 )
+rect_scale = Vector2( 1.5, 1.5 )
 text = "BIOSPLIT 2 | HP 100 | ЯРОСТЬ 0/100"
 
 [node name="Status" type="Label" parent="UI/HUD"]
@@ -72,7 +71,7 @@ margin_left = 24.0
 margin_top = -146.0
 margin_right = 850.0
 margin_bottom = -118.0
-rect_scale = Vector2( 1.25,1.25 )
+rect_scale = Vector2( 1.25, 1.25 )
 text = "Ударьте врага, чтобы накопить ярость."
 
 [node name="EnemyStatus" type="Label" parent="UI/HUD"]
@@ -81,109 +80,243 @@ anchor_right = 0.6
 margin_top = 20.0
 margin_right = 340.0
 margin_bottom = 48.0
-rect_scale = Vector2( 1.375,1.375 )
+rect_scale = Vector2( 1.375, 1.375 )
 text = "ВРАГ 1 • 80/80"
 
 [node name="HealthBar" type="ProgressBar" parent="UI/HUD"]
-anchor_left = 0
 anchor_right = 0.28
-margin_left = 24
-margin_right = 24
-margin_top = 59
-margin_bottom = 75
-custom_styles/bg = SubResource( 5 )
+margin_left = 24.0
+margin_top = 59.0
+margin_right = 24.0
+margin_bottom = 75.0
 custom_styles/fg = SubResource( 2 )
-value = 100
+custom_styles/bg = SubResource( 5 )
+value = 100.0
 percent_visible = false
 
 [node name="RageBar" type="ProgressBar" parent="UI/HUD"]
-anchor_left = 0
 anchor_right = 0.28
-margin_left = 24
-margin_right = 24
-margin_top = 83
-margin_bottom = 93
-custom_styles/bg = SubResource( 5 )
+margin_left = 24.0
+margin_top = 83.0
+margin_right = 24.0
+margin_bottom = 93.0
 custom_styles/fg = SubResource( 3 )
-value = 0
+custom_styles/bg = SubResource( 5 )
 percent_visible = false
 
 [node name="EnemyBar" type="ProgressBar" parent="UI/HUD"]
 anchor_left = 0.6
 anchor_right = 0.96
-margin_left = 0
-margin_right = 0
-margin_top = 65
-margin_bottom = 81
-custom_styles/bg = SubResource( 5 )
+margin_top = 65.0
+margin_bottom = 81.0
 custom_styles/fg = SubResource( 4 )
-value = 80
+custom_styles/bg = SubResource( 5 )
+value = 80.0
 percent_visible = false
 
-[node name="PunchButton" type="Button" parent="UI/HUD"]
-anchor_left = 0
+[node name="PunchButton" type="Control" parent="UI/HUD"]
 anchor_top = 1.0
 anchor_right = 0.2
 anchor_bottom = 1.0
-margin_left = 24
+margin_left = 24.0
 margin_top = -104.0
-margin_right = 3.1999999999999993
+margin_right = 3.2
 margin_bottom = -22.0
-text = "УДАР [1]"
-icon = ExtResource( 3 )
-expand_icon = true
+mouse_filter = 2
 
-[node name="ShootButton" type="Button" parent="UI/HUD"]
+[node name="Card" type="Panel" parent="UI/HUD/PunchButton"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+
+[node name="Icon" type="TextureRect" parent="UI/HUD/PunchButton"]
+margin_left = 8.0
+margin_top = 5.0
+margin_right = 80.0
+margin_bottom = 77.0
+mouse_filter = 2
+texture = ExtResource( 3 )
+expand = true
+stretch_mode = 6
+
+[node name="Caption" type="Label" parent="UI/HUD/PunchButton"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+margin_left = 84.0
+mouse_filter = 2
+text = "УДАР [1]"
+align = 1
+valign = 1
+
+[node name="TouchButton" type="TouchScreenButton" parent="UI/HUD/PunchButton"]
+script = ExtResource( 8 )
+shape_centered = false
+shape_visible = false
+visibility_mode = 0
+
+[node name="ShootButton" type="Control" parent="UI/HUD"]
 anchor_left = 0.2
 anchor_top = 1.0
 anchor_right = 0.4
 anchor_bottom = 1.0
 margin_left = 11.2
 margin_top = -104.0
-margin_right = -9.600000000000001
+margin_right = -9.6
 margin_bottom = -22.0
-text = "ВЫСТРЕЛ [2] 30 ЯР"
-icon = ExtResource( 4 )
-expand_icon = true
+mouse_filter = 2
 
-[node name="DodgeButton" type="Button" parent="UI/HUD"]
+[node name="Card" type="Panel" parent="UI/HUD/ShootButton"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+
+[node name="Icon" type="TextureRect" parent="UI/HUD/ShootButton"]
+margin_left = 8.0
+margin_top = 5.0
+margin_right = 80.0
+margin_bottom = 77.0
+mouse_filter = 2
+texture = ExtResource( 4 )
+expand = true
+stretch_mode = 6
+
+[node name="Caption" type="Label" parent="UI/HUD/ShootButton"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+margin_left = 84.0
+mouse_filter = 2
+text = "ВЫСТРЕЛ [2] 30 ЯР"
+align = 1
+valign = 1
+
+[node name="TouchButton" type="TouchScreenButton" parent="UI/HUD/ShootButton"]
+script = ExtResource( 8 )
+shape_centered = false
+shape_visible = false
+visibility_mode = 0
+
+[node name="DodgeButton" type="Control" parent="UI/HUD"]
 anchor_left = 0.4
 anchor_top = 1.0
-anchor_right = 0.6000000000000001
+anchor_right = 0.6
 anchor_bottom = 1.0
-margin_left = -1.6000000000000014
+margin_left = -1.6
 margin_top = -104.0
-margin_right = -22.400000000000006
+margin_right = -22.4
 margin_bottom = -22.0
-text = "УВОРОТ [3]"
-icon = ExtResource( 5 )
-expand_icon = true
+mouse_filter = 2
 
-[node name="BlockButton" type="Button" parent="UI/HUD"]
-anchor_left = 0.6000000000000001
+[node name="Card" type="Panel" parent="UI/HUD/DodgeButton"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+
+[node name="Icon" type="TextureRect" parent="UI/HUD/DodgeButton"]
+margin_left = 8.0
+margin_top = 5.0
+margin_right = 80.0
+margin_bottom = 77.0
+mouse_filter = 2
+texture = ExtResource( 5 )
+expand = true
+stretch_mode = 6
+
+[node name="Caption" type="Label" parent="UI/HUD/DodgeButton"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+margin_left = 84.0
+mouse_filter = 2
+text = "УВОРОТ [3]"
+align = 1
+valign = 1
+
+[node name="TouchButton" type="TouchScreenButton" parent="UI/HUD/DodgeButton"]
+script = ExtResource( 8 )
+shape_centered = false
+shape_visible = false
+visibility_mode = 0
+
+[node name="BlockButton" type="Control" parent="UI/HUD"]
+anchor_left = 0.6
 anchor_top = 1.0
 anchor_right = 0.8
 anchor_bottom = 1.0
-margin_left = -14.400000000000006
+margin_left = -14.4
 margin_top = -104.0
 margin_right = -35.2
 margin_bottom = -22.0
-text = "ЗАЩИТА [4]"
-icon = ExtResource( 6 )
-expand_icon = true
+mouse_filter = 2
 
-[node name="InventoryButton" type="Button" parent="UI/HUD"]
+[node name="Card" type="Panel" parent="UI/HUD/BlockButton"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+
+[node name="Icon" type="TextureRect" parent="UI/HUD/BlockButton"]
+margin_left = 8.0
+margin_top = 5.0
+margin_right = 80.0
+margin_bottom = 77.0
+mouse_filter = 2
+texture = ExtResource( 6 )
+expand = true
+stretch_mode = 6
+
+[node name="Caption" type="Label" parent="UI/HUD/BlockButton"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+margin_left = 84.0
+mouse_filter = 2
+text = "ЗАЩИТА [4]"
+align = 1
+valign = 1
+
+[node name="TouchButton" type="TouchScreenButton" parent="UI/HUD/BlockButton"]
+script = ExtResource( 8 )
+shape_centered = false
+shape_visible = false
+visibility_mode = 0
+
+[node name="InventoryButton" type="Control" parent="UI/HUD"]
 anchor_left = 0.8
 anchor_top = 1.0
-anchor_right = 1
+anchor_right = 1.0
 anchor_bottom = 1.0
-margin_left = -27.200000000000003
+margin_left = -27.2
 margin_top = -104.0
-margin_right = -48
+margin_right = -48.0
 margin_bottom = -22.0
+mouse_filter = 2
+
+[node name="Card" type="Panel" parent="UI/HUD/InventoryButton"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+
+[node name="Icon" type="TextureRect" parent="UI/HUD/InventoryButton"]
+margin_left = 8.0
+margin_top = 5.0
+margin_right = 80.0
+margin_bottom = 77.0
+mouse_filter = 2
+texture = ExtResource( 7 )
+expand = true
+stretch_mode = 6
+
+[node name="Caption" type="Label" parent="UI/HUD/InventoryButton"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+margin_left = 84.0
+mouse_filter = 2
 text = "ИНВЕНТАРЬ [I]"
-icon = ExtResource( 7 )
-expand_icon = true
+align = 1
+valign = 1
+
+[node name="TouchButton" type="TouchScreenButton" parent="UI/HUD/InventoryButton"]
+script = ExtResource( 8 )
+shape_centered = false
+shape_visible = false
+visibility_mode = 0
 
 [node name="Inventory" type="Panel" parent="UI/HUD"]
 anchor_left = 0.5
@@ -201,27 +334,72 @@ margin_left = 24.0
 margin_top = 20.0
 margin_right = 380.0
 margin_bottom = 142.0
-rect_scale = Vector2( 1.375,1.375 )
-text = "ИНВЕНТАРЬ\n\nМонеты: 0\nАптечки: 2\nБой приостановлен"
+rect_scale = Vector2( 1.375, 1.375 )
+text = "ИНВЕНТАРЬ
 
-[node name="HealButton" type="Button" parent="UI/HUD/Inventory"]
+Монеты: 0
+Аптечки: 2
+Бой приостановлен"
+
+[node name="HealButton" type="Control" parent="UI/HUD/Inventory"]
 margin_left = 24.0
-margin_top = 155
+margin_top = 155.0
 margin_right = 396.0
-margin_bottom = 199
+margin_bottom = 199.0
+mouse_filter = 2
+
+[node name="Card" type="Panel" parent="UI/HUD/Inventory/HealButton"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+
+[node name="Caption" type="Label" parent="UI/HUD/Inventory/HealButton"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+margin_left = 0.0
+mouse_filter = 2
 text = "Аптечка: +40 здоровья"
+align = 1
+valign = 1
 
-[node name="CloseButton" type="Button" parent="UI/HUD/Inventory"]
+[node name="TouchButton" type="TouchScreenButton" parent="UI/HUD/Inventory/HealButton"]
+script = ExtResource( 8 )
+shape_centered = false
+shape_visible = false
+visibility_mode = 0
+
+[node name="CloseButton" type="Control" parent="UI/HUD/Inventory"]
 margin_left = 24.0
-margin_top = 214
+margin_top = 214.0
 margin_right = 396.0
-margin_bottom = 256
-text = "Закрыть [I]"
+margin_bottom = 256.0
+mouse_filter = 2
 
-[connection signal="pressed" from="UI/HUD/PunchButton" to="." method="Punch"]
-[connection signal="pressed" from="UI/HUD/ShootButton" to="." method="Shoot"]
-[connection signal="pressed" from="UI/HUD/DodgeButton" to="." method="Dodge"]
-[connection signal="pressed" from="UI/HUD/BlockButton" to="." method="Block"]
-[connection signal="pressed" from="UI/HUD/InventoryButton" to="." method="ToggleInventory"]
-[connection signal="pressed" from="UI/HUD/Inventory/HealButton" to="." method="UseKit"]
-[connection signal="pressed" from="UI/HUD/Inventory/CloseButton" to="." method="ToggleInventory"]
+[node name="Card" type="Panel" parent="UI/HUD/Inventory/CloseButton"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+
+[node name="Caption" type="Label" parent="UI/HUD/Inventory/CloseButton"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+margin_left = 0.0
+mouse_filter = 2
+text = "Закрыть [I]"
+align = 1
+valign = 1
+
+[node name="TouchButton" type="TouchScreenButton" parent="UI/HUD/Inventory/CloseButton"]
+script = ExtResource( 8 )
+shape_centered = false
+shape_visible = false
+visibility_mode = 0
+
+[connection signal="pressed" from="UI/HUD/PunchButton/TouchButton" to="." method="Punch"]
+[connection signal="pressed" from="UI/HUD/ShootButton/TouchButton" to="." method="Shoot"]
+[connection signal="pressed" from="UI/HUD/DodgeButton/TouchButton" to="." method="Dodge"]
+[connection signal="pressed" from="UI/HUD/BlockButton/TouchButton" to="." method="Block"]
+[connection signal="pressed" from="UI/HUD/InventoryButton/TouchButton" to="." method="ToggleInventory"]
+[connection signal="pressed" from="UI/HUD/Inventory/HealButton/TouchButton" to="." method="UseKit"]
+[connection signal="pressed" from="UI/HUD/Inventory/CloseButton/TouchButton" to="." method="ToggleInventory"]
+
