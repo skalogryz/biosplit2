@@ -1,0 +1,5 @@
+.import/
+.mono/
+bin/
+obj/
+*.user
