@@ -30,7 +30,7 @@ public class Main : Node2D
 	private AnimatedSprite player, enemy;
 	private Line2D shield, shotTrail;
 	private Vector2 playerOrigin, enemyOrigin, backgroundOrigin;
-	private Color playerColor;
+	private Color playerColor, enemyColor;
 	private string playerAction = "attack";
 	private Label healthLabel, rageLabel, status, enemyStatus, inventoryText;
 	private ProgressBar healthBar, rageBar, enemyBar;
@@ -39,7 +39,7 @@ public class Main : Node2D
 	private TouchActionButton heal;
 	private int hp = 100, rage, enemyHp = 80, enemyMax = 80, wave = 1, coins, kits = 2;
 	private float scroll, targetScroll, cooldown, pose, defense, dodgeCooldown;
-	private float enemyClock, enemyPose, respawn, flash;
+	private float enemyClock, enemyPose, respawn, flash, enemyFlash;
 	private bool blocking, dodging, gameOver;
 	private string message = "Ударьте врага, чтобы накопить ярость.";
 
@@ -55,6 +55,7 @@ public class Main : Node2D
 		playerOrigin = player.Position;
 		enemyOrigin = enemy.Position;
 		playerColor = player.Modulate;
+		enemyColor = enemy.Modulate;
 		healthLabel = GetOptionalNode<Label>(HealthLabelPath);
 		rageLabel = GetOptionalNode<Label>(RageLabelPath);
 		status = GetOptionalNode<Label>(StatusLabelPath);
@@ -83,7 +84,7 @@ public class Main : Node2D
 		{
 			cooldown = Mathf.Max(0,cooldown-delta); dodgeCooldown = Mathf.Max(0,dodgeCooldown-delta);
 			pose = Mathf.Max(0,pose-delta); enemyPose = Mathf.Max(0,enemyPose-delta);
-			defense = Mathf.Max(0,defense-delta); flash = Mathf.Max(0,flash-delta);
+			defense = Mathf.Max(0,defense-delta); flash = Mathf.Max(0,flash-delta); enemyFlash = Mathf.Max(0,enemyFlash-delta);
 			if (defense <= 0) { blocking = false; dodging = false; }
 			if (enemyHp <= 0)
 			{
@@ -111,6 +112,7 @@ public class Main : Node2D
 		enemy.Position = enemyOrigin + new Vector2(enemyPose > 0 ? -25 : 0, 0);
 		player.Modulate = blocking ? new Color("77bbff") : flash > 0 ? new Color("ff7777") : playerColor;
 		SetAnimation(player, gameOver ? "defeat" : dodging ? "dodge" : blocking ? "block" : pose > 0 ? playerAction : flash > 0 ? "hurt" : "idle");
+		enemy.Modulate = enemyFlash > 0 ? new Color("ff7777") : enemyColor;
 		SetAnimation(enemy, enemyHp <= 0 ? "defeat" : enemyPose > 0 ? "attack" : "idle");
 		player.Playing = !inventory.Visible && !gameOver;
 		enemy.Playing = !inventory.Visible && !gameOver;
@@ -168,6 +170,8 @@ public class Main : Node2D
 	private void HurtEnemy(int damage)
 	{
 		enemyHp=Math.Max(0,enemyHp-Math.Max(1,damage));
+		enemyFlash = 0.18f;
+		enemy.Modulate = new Color("ff7777");
 		if(enemyHp==0) { coins+=10; if(wave%3==0) kits++; respawn=0.9f; enemyClock=0; }
 	}
 	public void ToggleInventory() { if(!gameOver) inventory.Visible=!inventory.Visible; }
@@ -237,6 +241,7 @@ public class Main : Node2D
 		}
 	}
 }
+
 
 
 
