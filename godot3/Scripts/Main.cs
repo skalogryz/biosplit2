@@ -3,7 +3,9 @@ using System;
 
 public class Main : Node2D
 {
-	[Export] public int RagePerPunch = 10;
+	[Export] public int MaxHealth = 100;
+    [Export] public int MaxRage = 100;
+    [Export] public int RagePerPunch = 10;
 	[Export] public int ShotCost = 30;
 	[Export] public int PunchDamage = 12;
 	[Export] public int ShotDamage = 40;
@@ -37,7 +39,7 @@ public class Main : Node2D
 	private TouchScreenButton[] actions = new TouchScreenButton[5];
 	private Panel inventory;
 	private TouchActionButton heal;
-	private int hp = 100, rage, enemyHp = 80, enemyMax = 80, wave = 1, coins, kits = 2;
+	private int hp, rage, enemyHp = 80, enemyMax = 80, wave = 1, coins, kits = 2;
 	private float scroll, targetScroll, cooldown, pose, defense, dodgeCooldown;
 	private float enemyClock, enemyPose, respawn, flash, enemyFlash;
 	private bool blocking, dodging, gameOver;
@@ -45,6 +47,12 @@ public class Main : Node2D
 
 	public override void _Ready()
 	{
+        string executableDirectory = System.IO.Path.GetDirectoryName(OS.GetExecutablePath());
+        WeaponConfiguration.Load(executableDirectory, this);
+        HeroConfiguration.Load(executableDirectory, this);
+        MaxHealth = Math.Max(1, MaxHealth);
+        MaxRage = Math.Max(1, MaxRage);
+        hp = MaxHealth;
 		background = GetNode<ParallaxBackground>("Background");
 		panorama = GetNode<ParallaxLayer>("Background/Panorama");
 		backgroundOrigin = background.ScrollOffset;
@@ -149,7 +157,7 @@ public class Main : Node2D
 	public void Punch()
 	{
 		if(!CanAct()) return;
-		rage=Math.Min(100,rage+Math.Max(1,RagePerPunch)); targetScroll+=Mathf.Max(0,ScrollPerPunch);
+		rage=(int)Math.Min(MaxRage, (long)rage + Math.Max(1, RagePerPunch)); targetScroll+=Mathf.Max(0,ScrollPerPunch);
 		StartPlayerAnimation("attack"); pose=AnimationDuration(player, "attack", 0.20f); cooldown=0.26f; HurtEnemy(PunchDamage); message="Удар! +"+RagePerPunch+" ярости.";
 	}
 	public void Shoot()
@@ -177,8 +185,8 @@ public class Main : Node2D
 	public void ToggleInventory() { if(!gameOver) inventory.Visible=!inventory.Visible; }
 	public void UseKit()
 	{
-		if(!inventory.Visible || kits<=0 || hp>=100 || gameOver) return;
-		kits--; hp=Math.Min(100,hp+40); Refresh();
+		if(!inventory.Visible || kits<=0 || hp>=MaxHealth || gameOver) return;
+		kits--; hp=(int)Math.Min(MaxHealth, (long)hp + 40); Refresh();
 	}
 	private TouchScreenButton BindActionButton(NodePath path, string method, string field)
 	{
@@ -212,20 +220,20 @@ public class Main : Node2D
 	}
 	private void Refresh()
 	{
-		if (Godot.Object.IsInstanceValid(healthLabel)) healthLabel.Text = $"{hp}/100";
-		if (Godot.Object.IsInstanceValid(rageLabel)) rageLabel.Text = $"{rage}/100";
+		if (Godot.Object.IsInstanceValid(healthLabel)) healthLabel.Text = $"{hp}/{MaxHealth}";
+		if (Godot.Object.IsInstanceValid(rageLabel)) rageLabel.Text = $"{rage}/{MaxRage}";
 		bool warning=enemyHp>0 && enemyClock>=Mathf.Max(1.2f,EnemyAttackInterval)-Mathf.Max(0.1f,EnemyWarningTime);
 		if (Godot.Object.IsInstanceValid(enemyStatus)) enemyStatus.Text=enemyHp<=0 ? "ПОБЕДА! +10 монет" : "ВРАГ "+wave+"  •  "+enemyHp+"/"+enemyMax+(warning ? "   ⚠ АТАКУЕТ!" : "");
 		if (Godot.Object.IsInstanceValid(enemyStatus)) enemyStatus.Modulate=warning ? new Color("ff8a5b") : Colors.White;
 		if (Godot.Object.IsInstanceValid(status)) status.Text = message;
-		if (Godot.Object.IsInstanceValid(healthBar)) healthBar.Value = hp;
-		if (Godot.Object.IsInstanceValid(rageBar)) rageBar.Value = rage;
+		if (Godot.Object.IsInstanceValid(healthBar)) { healthBar.MaxValue = MaxHealth; healthBar.Value = hp; }
+		if (Godot.Object.IsInstanceValid(rageBar)) { rageBar.MaxValue = MaxRage; rageBar.Value = rage; }
 		if (Godot.Object.IsInstanceValid(enemyBar)) { enemyBar.MaxValue = enemyMax; enemyBar.Value = enemyHp; }
 		SetButtonEnabled(actions[0], CanAct()); SetButtonEnabled(actions[1], CanAct() && rage >= Math.Max(1, ShotCost));
 		if (actions[1] is TouchActionButton shootButton) shootButton.Text="ВЫСТРЕЛ [2]  "+ShotCost+" ЯР";
 		SetButtonEnabled(actions[2], CanAct() && dodgeCooldown <= 0); SetButtonEnabled(actions[3], CanAct()); SetButtonEnabled(actions[4], !gameOver);
 		if (Godot.Object.IsInstanceValid(inventoryText)) inventoryText.Text="ИНВЕНТАРЬ\n\nМонеты: "+coins+"\nАптечки: "+kits+"\nБой приостановлен";
-		heal.Disabled=kits<=0 || hp>=100;
+		heal.Disabled=kits<=0 || hp>=MaxHealth;
 	}
 	public override void _UnhandledKeyInput(InputEventKey key)
 	{
@@ -241,6 +249,9 @@ public class Main : Node2D
 		}
 	}
 }
+
+
+
 
 
 

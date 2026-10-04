@@ -5,6 +5,10 @@ VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Biosplit2", "Biosplit2.csproj", "{23BD3167-73A2-44BB-A139-8CDEE97BF239}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Libraries", "Libraries", "{F2E35B3E-9711-EDEC-6202-DB40BDEED14A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Biosplit.Ini", "Libraries\Biosplit.Ini\Biosplit.Ini.csproj", "{9F56C47B-817F-4639-80CC-C97D7B0C3E8B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -45,9 +49,36 @@ Global
 		{23BD3167-73A2-44BB-A139-8CDEE97BF239}.Release|x64.Build.0 = Debug|Any CPU
 		{23BD3167-73A2-44BB-A139-8CDEE97BF239}.Release|x86.ActiveCfg = Debug|Any CPU
 		{23BD3167-73A2-44BB-A139-8CDEE97BF239}.Release|x86.Build.0 = Debug|Any CPU
+		{9F56C47B-817F-4639-80CC-C97D7B0C3E8B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9F56C47B-817F-4639-80CC-C97D7B0C3E8B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9F56C47B-817F-4639-80CC-C97D7B0C3E8B}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{9F56C47B-817F-4639-80CC-C97D7B0C3E8B}.Debug|x64.Build.0 = Debug|Any CPU
+		{9F56C47B-817F-4639-80CC-C97D7B0C3E8B}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{9F56C47B-817F-4639-80CC-C97D7B0C3E8B}.Debug|x86.Build.0 = Debug|Any CPU
+		{9F56C47B-817F-4639-80CC-C97D7B0C3E8B}.ExportDebug|Any CPU.ActiveCfg = ExportDebug|Any CPU
+		{9F56C47B-817F-4639-80CC-C97D7B0C3E8B}.ExportDebug|Any CPU.Build.0 = ExportDebug|Any CPU
+		{9F56C47B-817F-4639-80CC-C97D7B0C3E8B}.ExportDebug|x64.ActiveCfg = ExportDebug|Any CPU
+		{9F56C47B-817F-4639-80CC-C97D7B0C3E8B}.ExportDebug|x64.Build.0 = ExportDebug|Any CPU
+		{9F56C47B-817F-4639-80CC-C97D7B0C3E8B}.ExportDebug|x86.ActiveCfg = ExportDebug|Any CPU
+		{9F56C47B-817F-4639-80CC-C97D7B0C3E8B}.ExportDebug|x86.Build.0 = ExportDebug|Any CPU
+		{9F56C47B-817F-4639-80CC-C97D7B0C3E8B}.ExportRelease|Any CPU.ActiveCfg = ExportRelease|Any CPU
+		{9F56C47B-817F-4639-80CC-C97D7B0C3E8B}.ExportRelease|Any CPU.Build.0 = ExportRelease|Any CPU
+		{9F56C47B-817F-4639-80CC-C97D7B0C3E8B}.ExportRelease|x64.ActiveCfg = ExportRelease|Any CPU
+		{9F56C47B-817F-4639-80CC-C97D7B0C3E8B}.ExportRelease|x64.Build.0 = ExportRelease|Any CPU
+		{9F56C47B-817F-4639-80CC-C97D7B0C3E8B}.ExportRelease|x86.ActiveCfg = ExportRelease|Any CPU
+		{9F56C47B-817F-4639-80CC-C97D7B0C3E8B}.ExportRelease|x86.Build.0 = ExportRelease|Any CPU
+		{9F56C47B-817F-4639-80CC-C97D7B0C3E8B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9F56C47B-817F-4639-80CC-C97D7B0C3E8B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9F56C47B-817F-4639-80CC-C97D7B0C3E8B}.Release|x64.ActiveCfg = Release|Any CPU
+		{9F56C47B-817F-4639-80CC-C97D7B0C3E8B}.Release|x64.Build.0 = Release|Any CPU
+		{9F56C47B-817F-4639-80CC-C97D7B0C3E8B}.Release|x86.ActiveCfg = Release|Any CPU
+		{9F56C47B-817F-4639-80CC-C97D7B0C3E8B}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{9F56C47B-817F-4639-80CC-C97D7B0C3E8B} = {F2E35B3E-9711-EDEC-6202-DB40BDEED14A}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {D46ED66D-650E-452B-870B-E356ED724203}
