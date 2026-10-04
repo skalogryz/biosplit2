@@ -10,6 +10,12 @@ Global
 		Debug|Any CPU = Debug|Any CPU
 		Debug|x64 = Debug|x64
 		Debug|x86 = Debug|x86
+		ExportDebug|Any CPU = ExportDebug|Any CPU
+		ExportDebug|x64 = ExportDebug|x64
+		ExportDebug|x86 = ExportDebug|x86
+		ExportRelease|Any CPU = ExportRelease|Any CPU
+		ExportRelease|x64 = ExportRelease|x64
+		ExportRelease|x86 = ExportRelease|x86
 		Release|Any CPU = Release|Any CPU
 		Release|x64 = Release|x64
 		Release|x86 = Release|x86
@@ -21,6 +27,18 @@ Global
 		{23BD3167-73A2-44BB-A139-8CDEE97BF239}.Debug|x64.Build.0 = Debug|Any CPU
 		{23BD3167-73A2-44BB-A139-8CDEE97BF239}.Debug|x86.ActiveCfg = Debug|Any CPU
 		{23BD3167-73A2-44BB-A139-8CDEE97BF239}.Debug|x86.Build.0 = Debug|Any CPU
+		{23BD3167-73A2-44BB-A139-8CDEE97BF239}.ExportDebug|Any CPU.ActiveCfg = ExportDebug|Any CPU
+		{23BD3167-73A2-44BB-A139-8CDEE97BF239}.ExportDebug|Any CPU.Build.0 = ExportDebug|Any CPU
+		{23BD3167-73A2-44BB-A139-8CDEE97BF239}.ExportDebug|x64.ActiveCfg = ExportDebug|Any CPU
+		{23BD3167-73A2-44BB-A139-8CDEE97BF239}.ExportDebug|x64.Build.0 = ExportDebug|Any CPU
+		{23BD3167-73A2-44BB-A139-8CDEE97BF239}.ExportDebug|x86.ActiveCfg = ExportDebug|Any CPU
+		{23BD3167-73A2-44BB-A139-8CDEE97BF239}.ExportDebug|x86.Build.0 = ExportDebug|Any CPU
+		{23BD3167-73A2-44BB-A139-8CDEE97BF239}.ExportRelease|Any CPU.ActiveCfg = ExportRelease|Any CPU
+		{23BD3167-73A2-44BB-A139-8CDEE97BF239}.ExportRelease|Any CPU.Build.0 = ExportRelease|Any CPU
+		{23BD3167-73A2-44BB-A139-8CDEE97BF239}.ExportRelease|x64.ActiveCfg = ExportRelease|Any CPU
+		{23BD3167-73A2-44BB-A139-8CDEE97BF239}.ExportRelease|x64.Build.0 = ExportRelease|Any CPU
+		{23BD3167-73A2-44BB-A139-8CDEE97BF239}.ExportRelease|x86.ActiveCfg = ExportRelease|Any CPU
+		{23BD3167-73A2-44BB-A139-8CDEE97BF239}.ExportRelease|x86.Build.0 = ExportRelease|Any CPU
 		{23BD3167-73A2-44BB-A139-8CDEE97BF239}.Release|Any CPU.ActiveCfg = Debug|Any CPU
 		{23BD3167-73A2-44BB-A139-8CDEE97BF239}.Release|Any CPU.Build.0 = Debug|Any CPU
 		{23BD3167-73A2-44BB-A139-8CDEE97BF239}.Release|x64.ActiveCfg = Debug|Any CPU
@@ -30,5 +48,8 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {D46ED66D-650E-452B-870B-E356ED724203}
 	EndGlobalSection
 EndGlobal
