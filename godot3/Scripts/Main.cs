@@ -209,8 +209,8 @@ public class Main : Node2D
 	}
 	private void Refresh()
 	{
-		if (Godot.Object.IsInstanceValid(healthLabel)) healthLabel.Text = "ЖИЗНЬ: " + hp + "/100";
-		if (Godot.Object.IsInstanceValid(rageLabel)) rageLabel.Text = "ЯРОСТЬ: " + rage + "/100";
+		if (Godot.Object.IsInstanceValid(healthLabel)) healthLabel.Text = $"{hp}/100";
+		if (Godot.Object.IsInstanceValid(rageLabel)) rageLabel.Text = $"{rage}/100";
 		bool warning=enemyHp>0 && enemyClock>=Mathf.Max(1.2f,EnemyAttackInterval)-Mathf.Max(0.1f,EnemyWarningTime);
 		if (Godot.Object.IsInstanceValid(enemyStatus)) enemyStatus.Text=enemyHp<=0 ? "ПОБЕДА! +10 монет" : "ВРАГ "+wave+"  •  "+enemyHp+"/"+enemyMax+(warning ? "   ⚠ АТАКУЕТ!" : "");
 		if (Godot.Object.IsInstanceValid(enemyStatus)) enemyStatus.Modulate=warning ? new Color("ff8a5b") : Colors.White;
