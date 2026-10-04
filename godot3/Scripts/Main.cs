@@ -4,15 +4,17 @@ using System;
 public class Main : Node2D
 {
 	[Export] public int MaxHealth = 100;
-    [Export] public int MaxRage = 100;
-    [Export] public int RagePerPunch = 10;
+	[Export] public int MaxRage = 100;
+	[Export] public int RagePerPunch = 10;
 	[Export] public int ShotCost = 30;
 	[Export] public int PunchDamage = 12;
 	[Export] public int ShotDamage = 40;
+    [Export] public int PunchCooldownMs = 260;
+    [Export] public int ShotCooldownMs = 550;
 	[Export] public float ScrollPerPunch = 32;
 	[Export] public int EnemyDamage = 15;
-    [Export] public int EnemyHealth = 80;
-    [Export] public float EnemyAttackInterval = 2.4f;
+	[Export] public int EnemyHealth = 80;
+	[Export] public float EnemyAttackInterval = 2.4f;
 	[Export] public float EnemyWarningTime = 0.8f;
 
 		// Drag the desired TouchScreenButton from the scene tree into each field.
@@ -49,18 +51,18 @@ public class Main : Node2D
 
 	public override void _Ready()
 	{
-        string executableDirectory = System.IO.Path.GetDirectoryName(OS.GetExecutablePath());
-        WeaponConfiguration.Load(executableDirectory, this);
-        HeroConfiguration.Load(executableDirectory, this);
-        EnemyConfiguration.Load(executableDirectory, this);
-        EnemyDamage = Math.Max(0, EnemyDamage);
-        EnemyHealth = Math.Max(1, EnemyHealth);
-        EnemyAttackInterval = Mathf.Max(0.001f, EnemyAttackInterval);
-        enemyMax = EnemyHealth;
-        enemyHp = enemyMax;
-        MaxHealth = Math.Max(1, MaxHealth);
-        MaxRage = Math.Max(1, MaxRage);
-        hp = MaxHealth;
+		string executableDirectory = System.IO.Path.GetDirectoryName(OS.GetExecutablePath());
+		WeaponConfiguration.Load(executableDirectory, this);
+		HeroConfiguration.Load(executableDirectory, this);
+		EnemyConfiguration.Load(executableDirectory, this);
+		EnemyDamage = Math.Max(0, EnemyDamage);
+		EnemyHealth = Math.Max(1, EnemyHealth);
+		EnemyAttackInterval = Mathf.Max(0.001f, EnemyAttackInterval);
+		enemyMax = EnemyHealth;
+		enemyHp = enemyMax;
+		MaxHealth = Math.Max(1, MaxHealth);
+		MaxRage = Math.Max(1, MaxRage);
+		hp = MaxHealth;
 		background = GetNode<ParallaxBackground>("Background");
 		panorama = GetNode<ParallaxLayer>("Background/Panorama");
 		backgroundOrigin = background.ScrollOffset;
@@ -166,12 +168,12 @@ public class Main : Node2D
 	{
 		if(!CanAct()) return;
 		rage=(int)Math.Min(MaxRage, (long)rage + Math.Max(1, RagePerPunch)); targetScroll+=Mathf.Max(0,ScrollPerPunch);
-		StartPlayerAnimation("attack"); pose=AnimationDuration(player, "attack", 0.20f); cooldown=0.26f; HurtEnemy(PunchDamage); message="Удар! +"+RagePerPunch+" ярости.";
+		StartPlayerAnimation("attack"); pose=AnimationDuration(player, "attack", 0.20f); cooldown=Math.Max(0, PunchCooldownMs) / 1000f; HurtEnemy(PunchDamage); message="Удар! +"+RagePerPunch+" ярости.";
 	}
 	public void Shoot()
 	{
 		if(!CanAct() || rage<Math.Max(1,ShotCost)) return;
-		rage-=Math.Max(1,ShotCost); StartPlayerAnimation("shoot"); pose=AnimationDuration(player, "shoot", 0.23f); cooldown=0.55f; HurtEnemy(ShotDamage); message="Выстрел! −"+ShotCost+" ярости.";
+		rage-=Math.Max(1,ShotCost); StartPlayerAnimation("shoot"); pose=AnimationDuration(player, "shoot", 0.23f); cooldown=Math.Max(0, ShotCooldownMs) / 1000f; HurtEnemy(ShotDamage); message="Выстрел! −"+ShotCost+" ярости.";
 	}
 	public void Dodge()
 	{
@@ -257,6 +259,7 @@ public class Main : Node2D
 		}
 	}
 }
+
 
 
 

@@ -19,6 +19,10 @@ public static class WeaponConfiguration
             game.RagePerPunch = ini.GetInt("knife", "ragebonus", game.RagePerPunch);
             game.ShotDamage = ini.GetInt("handgun", "damage", game.ShotDamage);
             game.ShotCost = ini.GetInt("handgun", "rage", game.ShotCost);
+            int knifeCooldown = ini.GetInt("knife", "cooldown", game.PunchCooldownMs);
+            if (knifeCooldown >= 0) game.PunchCooldownMs = knifeCooldown;
+            int handgunCooldown = ini.GetInt("handgun", "cooldown", game.ShotCooldownMs);
+            if (handgunCooldown >= 0) game.ShotCooldownMs = handgunCooldown;
         }
         catch (Exception error) when (error is IOException || error is UnauthorizedAccessException)
         {
@@ -26,3 +30,4 @@ public static class WeaponConfiguration
         }
     }
 }
+
