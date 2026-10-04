@@ -10,7 +10,9 @@ public class Main : Node2D
 	[Export] public int PunchDamage = 12;
 	[Export] public int ShotDamage = 40;
 	[Export] public float ScrollPerPunch = 32;
-	[Export] public float EnemyAttackInterval = 2.4f;
+	[Export] public int EnemyDamage = 15;
+    [Export] public int EnemyHealth = 80;
+    [Export] public float EnemyAttackInterval = 2.4f;
 	[Export] public float EnemyWarningTime = 0.8f;
 
 		// Drag the desired TouchScreenButton from the scene tree into each field.
@@ -39,7 +41,7 @@ public class Main : Node2D
 	private TouchScreenButton[] actions = new TouchScreenButton[5];
 	private Panel inventory;
 	private TouchActionButton heal;
-	private int hp, rage, enemyHp = 80, enemyMax = 80, wave = 1, coins, kits = 2;
+	private int hp, rage, enemyHp, enemyMax, wave = 1, coins, kits = 2;
 	private float scroll, targetScroll, cooldown, pose, defense, dodgeCooldown;
 	private float enemyClock, enemyPose, respawn, flash, enemyFlash;
 	private bool blocking, dodging, gameOver;
@@ -50,6 +52,12 @@ public class Main : Node2D
         string executableDirectory = System.IO.Path.GetDirectoryName(OS.GetExecutablePath());
         WeaponConfiguration.Load(executableDirectory, this);
         HeroConfiguration.Load(executableDirectory, this);
+        EnemyConfiguration.Load(executableDirectory, this);
+        EnemyDamage = Math.Max(0, EnemyDamage);
+        EnemyHealth = Math.Max(1, EnemyHealth);
+        EnemyAttackInterval = Mathf.Max(0.001f, EnemyAttackInterval);
+        enemyMax = EnemyHealth;
+        enemyHp = enemyMax;
         MaxHealth = Math.Max(1, MaxHealth);
         MaxRage = Math.Max(1, MaxRage);
         hp = MaxHealth;
@@ -97,16 +105,16 @@ public class Main : Node2D
 			if (enemyHp <= 0)
 			{
 				respawn -= delta;
-				if (respawn <= 0) { wave++; enemyMax = 80+(wave-1)*15; enemyHp = enemyMax; enemyClock=0; message="Новый противник!"; }
+				if (respawn <= 0) { wave++; enemyMax = (int)Math.Min(int.MaxValue, (long)EnemyHealth + (wave-1L)*15); enemyHp = enemyMax; enemyClock=0; message="Новый противник!"; }
 			}
 			else
 			{
 				enemyClock += delta;
-				if (enemyClock >= Mathf.Max(1.2f,EnemyAttackInterval))
+				if (enemyClock >= Mathf.Max(0.001f,EnemyAttackInterval))
 				{
 					enemyClock = 0; enemy.Frame=0; enemy.Play("attack"); enemyPose=AnimationDuration(enemy, "attack", 0.25f);
 					if (dodging) message="Уворот: атака прошла мимо!";
-					else { int damage = blocking ? 3 : 15; hp=Math.Max(0,hp-damage); flash=0.18f; message=blocking ? "Блок: получено только 3 урона." : "Враг нанёс 15 урона."; }
+					else { int damage = blocking ? EnemyDamage / 5 : EnemyDamage; hp=Math.Max(0,hp-damage); flash=0.18f; message=blocking ? "Блок: получено " + damage + " урона." : "Враг нанёс " + damage + " урона."; }
 					if(hp==0) { gameOver=true; message="Вы проиграли. Нажмите R для новой игры."; }
 				}
 			}
@@ -222,7 +230,7 @@ public class Main : Node2D
 	{
 		if (Godot.Object.IsInstanceValid(healthLabel)) healthLabel.Text = $"{hp}/{MaxHealth}";
 		if (Godot.Object.IsInstanceValid(rageLabel)) rageLabel.Text = $"{rage}/{MaxRage}";
-		bool warning=enemyHp>0 && enemyClock>=Mathf.Max(1.2f,EnemyAttackInterval)-Mathf.Max(0.1f,EnemyWarningTime);
+		bool warning=enemyHp>0 && enemyClock>=Mathf.Max(0.001f,EnemyAttackInterval)-Mathf.Max(0.1f,EnemyWarningTime);
 		if (Godot.Object.IsInstanceValid(enemyStatus)) enemyStatus.Text=enemyHp<=0 ? "ПОБЕДА! +10 монет" : "ВРАГ "+wave+"  •  "+enemyHp+"/"+enemyMax+(warning ? "   ⚠ АТАКУЕТ!" : "");
 		if (Godot.Object.IsInstanceValid(enemyStatus)) enemyStatus.Modulate=warning ? new Color("ff8a5b") : Colors.White;
 		if (Godot.Object.IsInstanceValid(status)) status.Text = message;
@@ -249,6 +257,7 @@ public class Main : Node2D
 		}
 	}
 }
+
 
 
 
