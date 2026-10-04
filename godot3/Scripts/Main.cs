@@ -146,7 +146,6 @@ public class Main : Node2D
 	private bool CanAct() { return !gameOver && !inventory.Visible && enemyHp>0 && cooldown<=0; }
 	public void Punch()
 	{
-		GD.Print("punch!");
 		if(!CanAct()) return;
 		rage=Math.Min(100,rage+Math.Max(1,RagePerPunch)); targetScroll+=Mathf.Max(0,ScrollPerPunch);
 		StartPlayerAnimation("attack"); pose=AnimationDuration(player, "attack", 0.20f); cooldown=0.26f; HurtEnemy(PunchDamage); message="Удар! +"+RagePerPunch+" ярости.";
