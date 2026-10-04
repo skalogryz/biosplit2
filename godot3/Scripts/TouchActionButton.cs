@@ -1,6 +1,6 @@
 using Godot;
 
-// Control parent provides editable anchors; this node provides touch input.
+// Supports both standalone buttons and legacy Control + Caption wrappers.
 [Tool]
 public class TouchActionButton : TouchScreenButton
 {
@@ -10,22 +10,30 @@ public class TouchActionButton : TouchScreenButton
         get => disabled;
         set
         {
+            // Keep receiving releases while on cooldown; gameplay methods reject disabled actions.
             if (disabled == value) return;
             disabled = value;
-            SetProcessInput(!disabled);
-            GetParent<Control>().Modulate = disabled ? new Color(0.45f, 0.45f, 0.45f, 1) : Colors.White;
+            var wrapper = GetWrapper();
+            CanvasItem visual = wrapper != null ? (CanvasItem)wrapper : this;
+            visual.Modulate = disabled ? new Color(0.45f, 0.45f, 0.45f, 1) : Colors.White;
         }
     }
 
     public string Text
     {
-        get => GetParent().GetNode<Label>("Caption").Text;
-        set => GetParent().GetNode<Label>("Caption").Text = value;
+        get => GetWrapper()?.GetNode<Label>("Caption").Text ?? "";
+        set
+        {
+            var wrapper = GetWrapper();
+            if (wrapper != null) wrapper.GetNode<Label>("Caption").Text = value;
+        }
     }
 
     public override void _Ready()
     {
-        // Each button owns its hit area, including in the editor.
+        SetProcessInput(true);
+        if (GetWrapper() == null) return;
+        // Only composite buttons derive their hit area from the wrapper.
         Shape = new RectangleShape2D();
         ShapeCentered = false;
         ShapeVisible = false;
@@ -36,10 +44,16 @@ public class TouchActionButton : TouchScreenButton
 
     private void UpdateHitArea()
     {
-        var parent = GetParent() as Control;
+        var parent = GetWrapper();
         if (parent == null) return;
         Position = parent.RectSize * 0.5f;
         if (Shape is RectangleShape2D rectangle)
             rectangle.Extents = parent.RectSize * 0.5f;
+    }
+
+    private Control GetWrapper()
+    {
+        var parent = GetParent() as Control;
+        return parent != null && parent.GetNodeOrNull<Label>("Caption") != null ? parent : null;
     }
 }

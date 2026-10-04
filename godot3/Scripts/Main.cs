@@ -11,6 +11,12 @@ public class Main : Node2D
 	[Export] public float EnemyAttackInterval = 2.4f;
 	[Export] public float EnemyWarningTime = 0.8f;
 
+		// Drag the desired TouchScreenButton from the scene tree into each field.
+	[Export] public NodePath PunchButtonPath = new NodePath("");
+	[Export] public NodePath ShootButtonPath = new NodePath("");
+	[Export] public NodePath DodgeButtonPath = new NodePath("");
+	[Export] public NodePath BlockButtonPath = new NodePath("");
+	[Export] public NodePath InventoryButtonPath = new NodePath("");
 	private ParallaxBackground background;
 	private ParallaxLayer panorama;
 	private AnimatedSprite player, enemy;
@@ -20,7 +26,7 @@ public class Main : Node2D
 	private string playerAction = "attack";
 	private Label stats, status, enemyStatus, inventoryText;
 	private ProgressBar healthBar, rageBar, enemyBar;
-	private TouchActionButton[] actions = new TouchActionButton[5];
+	private TouchScreenButton[] actions = new TouchScreenButton[5];
 	private Panel inventory;
 	private TouchActionButton heal;
 	private int hp = 100, rage, enemyHp = 80, enemyMax = 80, wave = 1, coins, kits = 2;
@@ -47,9 +53,14 @@ public class Main : Node2D
 		healthBar = GetNode<ProgressBar>("UI/HUD/HealthBar");
 		rageBar = GetNode<ProgressBar>("UI/HUD/RageBar");
 		enemyBar = GetNode<ProgressBar>("UI/HUD/EnemyBar");
-		string[] buttonNames = { "PunchButton", "ShootButton", "DodgeButton", "BlockButton", "InventoryButton" };
-		for (int i = 0; i < actions.Length; i++)
-			actions[i] = GetNode<TouchActionButton>("UI/HUD/" + buttonNames[i] + "/TouchButton");
+		actions = new[]
+		{
+			BindActionButton(PunchButtonPath, nameof(Punch), nameof(PunchButtonPath)),
+			BindActionButton(ShootButtonPath, nameof(Shoot), nameof(ShootButtonPath)),
+			BindActionButton(DodgeButtonPath, nameof(Dodge), nameof(DodgeButtonPath)),
+			BindActionButton(BlockButtonPath, nameof(Block), nameof(BlockButtonPath)),
+			BindActionButton(InventoryButtonPath, nameof(ToggleInventory), nameof(InventoryButtonPath))
+		};
 		inventory = GetNode<Panel>("UI/HUD/Inventory");
 		inventoryText = inventory.GetNode<Label>("InventoryText");
 		heal = inventory.GetNode<TouchActionButton>("HealButton/TouchButton");
@@ -126,6 +137,7 @@ public class Main : Node2D
 	private bool CanAct() { return !gameOver && !inventory.Visible && enemyHp>0 && cooldown<=0; }
 	public void Punch()
 	{
+		GD.Print("punch!");
 		if(!CanAct()) return;
 		rage=Math.Min(100,rage+Math.Max(1,RagePerPunch)); targetScroll+=Mathf.Max(0,ScrollPerPunch);
 		StartPlayerAnimation("attack"); pose=AnimationDuration(player, "attack", 0.20f); cooldown=0.26f; HurtEnemy(PunchDamage); message="Удар! +"+RagePerPunch+" ярости.";
@@ -156,6 +168,31 @@ public class Main : Node2D
 		if(!inventory.Visible || kits<=0 || hp>=100 || gameOver) return;
 		kits--; hp=Math.Min(100,hp+40); Refresh();
 	}
+	private TouchScreenButton BindActionButton(NodePath path, string method, string field)
+	{
+		var button = path == null || path.IsEmpty() ? null : GetNodeOrNull<TouchScreenButton>(path);
+		if (button == null)
+		{
+			GD.PushWarning("Main: assign a TouchScreenButton to " + field + " in the inspector.");
+			return null;
+		}
+		button.SetProcessInput(true);
+		if (!button.IsConnected("pressed", this, method))
+			button.Connect("pressed", this, method);
+		return button;
+	}
+
+	private static void SetButtonEnabled(TouchScreenButton button, bool enabled)
+	{
+		if (button == null) return;
+		if (button is TouchActionButton custom)
+			custom.Disabled = !enabled;
+		else
+		{
+			// Leave input active so a cooldown cannot discard the touch release.
+			button.Modulate = enabled ? Colors.White : new Color(0.45f, 0.45f, 0.45f, 1);
+		}
+	}
 	private void Refresh()
 	{
 		stats.Text="BIOSPLIT 2   |   HP "+hp+"   |   ЯРОСТЬ "+rage+"/100";
@@ -163,9 +200,9 @@ public class Main : Node2D
 		enemyStatus.Text=enemyHp<=0 ? "ПОБЕДА! +10 монет" : "ВРАГ "+wave+"  •  "+enemyHp+"/"+enemyMax+(warning ? "   ⚠ АТАКУЕТ!" : "");
 		enemyStatus.Modulate=warning ? new Color("ff8a5b") : Colors.White;
 		status.Text=message; healthBar.Value=hp; rageBar.Value=rage; enemyBar.MaxValue=enemyMax; enemyBar.Value=enemyHp;
-		actions[0].Disabled=!CanAct(); actions[1].Disabled=!CanAct() || rage<Math.Max(1,ShotCost);
-		actions[1].Text="ВЫСТРЕЛ [2]  "+ShotCost+" ЯР";
-		actions[2].Disabled=!CanAct() || dodgeCooldown>0; actions[3].Disabled=!CanAct(); actions[4].Disabled=gameOver;
+		SetButtonEnabled(actions[0], CanAct()); SetButtonEnabled(actions[1], CanAct() && rage >= Math.Max(1, ShotCost));
+		if (actions[1] is TouchActionButton shootButton) shootButton.Text="ВЫСТРЕЛ [2]  "+ShotCost+" ЯР";
+		SetButtonEnabled(actions[2], CanAct() && dodgeCooldown <= 0); SetButtonEnabled(actions[3], CanAct()); SetButtonEnabled(actions[4], !gameOver);
 		inventoryText.Text="ИНВЕНТАРЬ\n\nМонеты: "+coins+"\nАптечки: "+kits+"\nБой приостановлен";
 		heal.Disabled=kits<=0 || hp>=100;
 	}
@@ -183,6 +220,8 @@ public class Main : Node2D
 		}
 	}
 }
+
+
 
 
 

@@ -1,4 +1,4 @@
-[gd_scene load_steps=26 format=2]
+[gd_scene load_steps=21 format=2]
 
 [ext_resource path="res://Scripts/Main.cs" type="Script" id=1]
 [ext_resource path="res://Assets/Fonts/NotoSans-Regular.ttf" type="DynamicFontData" id=2]
@@ -31,32 +31,22 @@ bg_color = Color( 0.937, 0.486, 0.212, 1 )
 [sub_resource type="StyleBoxFlat" id=4]
 bg_color = Color( 0.812, 0.357, 0.357, 1 )
 
-[sub_resource type="RectangleShape2D" id=8]
-extents = Vector2( 85.6, 41 )
-
-[sub_resource type="RectangleShape2D" id=9]
-extents = Vector2( 85.6, 41 )
-
-[sub_resource type="RectangleShape2D" id=10]
-extents = Vector2( 85.6, 41 )
-
-[sub_resource type="RectangleShape2D" id=11]
-extents = Vector2( 85.6, 41 )
-
-[sub_resource type="RectangleShape2D" id=12]
-extents = Vector2( 85.6, 41 )
-
 [sub_resource type="StyleBoxFlat" id=7]
 bg_color = Color( 0.04, 0.06, 0.08, 0.98 )
 
-[sub_resource type="RectangleShape2D" id=13]
+[sub_resource type="RectangleShape2D" id=8]
 extents = Vector2( 186, 22 )
 
-[sub_resource type="RectangleShape2D" id=14]
+[sub_resource type="RectangleShape2D" id=9]
 extents = Vector2( 186, 21 )
 
 [node name="Main" type="Node2D"]
 script = ExtResource( 1 )
+PunchButtonPath = NodePath("UI/HUD/Node2D/MeleeButton")
+ShootButtonPath = NodePath("UI/HUD/Node2D/ShootButton")
+DodgeButtonPath = NodePath("UI/HUD/Node2D/DodgeButton")
+BlockButtonPath = NodePath("UI/HUD/Node2D/BlockButton")
+InventoryButtonPath = NodePath("UI/HUD/Node2D/InventoryButton2")
 
 [node name="Background" type="ParallaxBackground" parent="."]
 layer = -10
@@ -106,12 +96,14 @@ mouse_filter = 2
 theme = SubResource( 6 )
 
 [node name="TopBackdrop" type="ColorRect" parent="UI/HUD"]
+visible = false
 anchor_right = 1.0
 margin_bottom = 110.0
 mouse_filter = 2
 color = Color( 0.02, 0.04, 0.06, 0.86 )
 
 [node name="BottomBackdrop" type="ColorRect" parent="UI/HUD"]
+visible = false
 anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -128,6 +120,7 @@ rect_scale = Vector2( 1.5, 1.5 )
 text = "BIOSPLIT 2 | HP 100 | ЯРОСТЬ 0/100"
 
 [node name="Status" type="Label" parent="UI/HUD"]
+visible = false
 anchor_top = 1.0
 anchor_bottom = 1.0
 margin_left = 24.0
@@ -177,210 +170,6 @@ custom_styles/bg = SubResource( 5 )
 value = 80.0
 percent_visible = false
 
-[node name="PunchButton" type="Control" parent="UI/HUD"]
-anchor_top = 1.0
-anchor_right = 0.2
-anchor_bottom = 1.0
-margin_left = 24.0
-margin_top = -104.0
-margin_right = 3.2
-margin_bottom = -22.0
-mouse_filter = 2
-
-[node name="Card" type="Panel" parent="UI/HUD/PunchButton"]
-anchor_right = 1.0
-anchor_bottom = 1.0
-mouse_filter = 2
-
-[node name="Icon" type="TextureRect" parent="UI/HUD/PunchButton"]
-margin_left = 8.0
-margin_top = 5.0
-margin_right = 80.0
-margin_bottom = 77.0
-mouse_filter = 2
-texture = ExtResource( 3 )
-expand = true
-stretch_mode = 6
-
-[node name="Caption" type="Label" parent="UI/HUD/PunchButton"]
-anchor_right = 1.0
-anchor_bottom = 1.0
-margin_left = 84.0
-text = "УДАР [1]"
-align = 1
-valign = 1
-
-[node name="TouchButton" type="TouchScreenButton" parent="UI/HUD/PunchButton"]
-position = Vector2( 85.6, 41 )
-shape = SubResource( 8 )
-shape_centered = false
-shape_visible = false
-script = ExtResource( 8 )
-
-[node name="ShootButton" type="Control" parent="UI/HUD"]
-anchor_left = 0.2
-anchor_top = 1.0
-anchor_right = 0.4
-anchor_bottom = 1.0
-margin_left = 11.2
-margin_top = -104.0
-margin_right = -9.6
-margin_bottom = -22.0
-mouse_filter = 2
-
-[node name="Card" type="Panel" parent="UI/HUD/ShootButton"]
-anchor_right = 1.0
-anchor_bottom = 1.0
-mouse_filter = 2
-
-[node name="Icon" type="TextureRect" parent="UI/HUD/ShootButton"]
-margin_left = 8.0
-margin_top = 5.0
-margin_right = 80.0
-margin_bottom = 77.0
-mouse_filter = 2
-texture = ExtResource( 4 )
-expand = true
-stretch_mode = 6
-
-[node name="Caption" type="Label" parent="UI/HUD/ShootButton"]
-anchor_right = 1.0
-anchor_bottom = 1.0
-margin_left = 84.0
-text = "ВЫСТРЕЛ [2] 30 ЯР"
-align = 1
-valign = 1
-
-[node name="TouchButton" type="TouchScreenButton" parent="UI/HUD/ShootButton"]
-position = Vector2( 85.6, 41 )
-shape = SubResource( 9 )
-shape_centered = false
-shape_visible = false
-script = ExtResource( 8 )
-
-[node name="DodgeButton" type="Control" parent="UI/HUD"]
-anchor_left = 0.4
-anchor_top = 1.0
-anchor_right = 0.6
-anchor_bottom = 1.0
-margin_left = -1.6
-margin_top = -104.0
-margin_right = -22.4
-margin_bottom = -22.0
-mouse_filter = 2
-
-[node name="Card" type="Panel" parent="UI/HUD/DodgeButton"]
-anchor_right = 1.0
-anchor_bottom = 1.0
-mouse_filter = 2
-
-[node name="Icon" type="TextureRect" parent="UI/HUD/DodgeButton"]
-margin_left = 8.0
-margin_top = 5.0
-margin_right = 80.0
-margin_bottom = 77.0
-mouse_filter = 2
-texture = ExtResource( 5 )
-expand = true
-stretch_mode = 6
-
-[node name="Caption" type="Label" parent="UI/HUD/DodgeButton"]
-anchor_right = 1.0
-anchor_bottom = 1.0
-margin_left = 84.0
-text = "УВОРОТ [3]"
-align = 1
-valign = 1
-
-[node name="TouchButton" type="TouchScreenButton" parent="UI/HUD/DodgeButton"]
-position = Vector2( 85.6, 41 )
-shape = SubResource( 10 )
-shape_centered = false
-shape_visible = false
-script = ExtResource( 8 )
-
-[node name="BlockButton" type="Control" parent="UI/HUD"]
-anchor_left = 0.6
-anchor_top = 1.0
-anchor_right = 0.8
-anchor_bottom = 1.0
-margin_left = -14.4
-margin_top = -104.0
-margin_right = -35.2
-margin_bottom = -22.0
-mouse_filter = 2
-
-[node name="Card" type="Panel" parent="UI/HUD/BlockButton"]
-anchor_right = 1.0
-anchor_bottom = 1.0
-mouse_filter = 2
-
-[node name="Icon" type="TextureRect" parent="UI/HUD/BlockButton"]
-margin_left = 8.0
-margin_top = 5.0
-margin_right = 80.0
-margin_bottom = 77.0
-mouse_filter = 2
-texture = ExtResource( 6 )
-expand = true
-stretch_mode = 6
-
-[node name="Caption" type="Label" parent="UI/HUD/BlockButton"]
-anchor_right = 1.0
-anchor_bottom = 1.0
-margin_left = 84.0
-text = "ЗАЩИТА [4]"
-align = 1
-valign = 1
-
-[node name="TouchButton" type="TouchScreenButton" parent="UI/HUD/BlockButton"]
-position = Vector2( 85.6, 41 )
-shape = SubResource( 11 )
-shape_centered = false
-shape_visible = false
-script = ExtResource( 8 )
-
-[node name="InventoryButton" type="Control" parent="UI/HUD"]
-anchor_left = 0.8
-anchor_top = 1.0
-anchor_right = 1.0
-anchor_bottom = 1.0
-margin_left = -27.2
-margin_top = -104.0
-margin_right = -48.0
-margin_bottom = -22.0
-mouse_filter = 2
-
-[node name="Card" type="Panel" parent="UI/HUD/InventoryButton"]
-anchor_right = 1.0
-anchor_bottom = 1.0
-mouse_filter = 2
-
-[node name="Icon" type="TextureRect" parent="UI/HUD/InventoryButton"]
-margin_left = 8.0
-margin_top = 5.0
-margin_right = 80.0
-margin_bottom = 77.0
-mouse_filter = 2
-texture = ExtResource( 7 )
-expand = true
-stretch_mode = 6
-
-[node name="Caption" type="Label" parent="UI/HUD/InventoryButton"]
-anchor_right = 1.0
-anchor_bottom = 1.0
-margin_left = 84.0
-text = "ИНВЕНТАРЬ [I]"
-align = 1
-valign = 1
-
-[node name="TouchButton" type="TouchScreenButton" parent="UI/HUD/InventoryButton"]
-position = Vector2( 85.6, 41 )
-shape = SubResource( 12 )
-shape_centered = false
-shape_visible = false
-script = ExtResource( 8 )
-
 [node name="Inventory" type="Panel" parent="UI/HUD"]
 anchor_left = 0.5
 anchor_top = 0.5
@@ -425,7 +214,7 @@ valign = 1
 
 [node name="TouchButton" type="TouchScreenButton" parent="UI/HUD/Inventory/HealButton"]
 position = Vector2( 186, 22 )
-shape = SubResource( 13 )
+shape = SubResource( 8 )
 shape_centered = false
 shape_visible = false
 script = ExtResource( 8 )
@@ -451,15 +240,48 @@ valign = 1
 
 [node name="TouchButton" type="TouchScreenButton" parent="UI/HUD/Inventory/CloseButton"]
 position = Vector2( 186, 21 )
-shape = SubResource( 14 )
+shape = SubResource( 9 )
 shape_centered = false
 shape_visible = false
 script = ExtResource( 8 )
 
-[connection signal="pressed" from="UI/HUD/PunchButton/TouchButton" to="." method="Punch"]
-[connection signal="pressed" from="UI/HUD/ShootButton/TouchButton" to="." method="Shoot"]
-[connection signal="pressed" from="UI/HUD/DodgeButton/TouchButton" to="." method="Dodge"]
-[connection signal="pressed" from="UI/HUD/BlockButton/TouchButton" to="." method="Block"]
-[connection signal="pressed" from="UI/HUD/InventoryButton/TouchButton" to="." method="ToggleInventory"]
+[node name="Node2D" type="Node2D" parent="UI/HUD"]
+
+[node name="MeleeButton" type="TouchScreenButton" parent="UI/HUD/Node2D"]
+position = Vector2( 806, 420 )
+normal = ExtResource( 3 )
+shape_centered = false
+shape_visible = false
+script = ExtResource( 8 )
+
+[node name="InventoryButton2" type="TouchScreenButton" parent="UI/HUD/Node2D"]
+position = Vector2( 154, 452 )
+scale = Vector2( 1.63415, 1.60526 )
+normal = ExtResource( 7 )
+shape_centered = false
+shape_visible = false
+script = ExtResource( 8 )
+
+[node name="ShootButton" type="TouchScreenButton" parent="UI/HUD/Node2D"]
+position = Vector2( 855, 365 )
+normal = ExtResource( 4 )
+shape_centered = false
+shape_visible = false
+script = ExtResource( 8 )
+
+[node name="BlockButton" type="TouchScreenButton" parent="UI/HUD/Node2D"]
+position = Vector2( 39, 423 )
+normal = ExtResource( 6 )
+shape_centered = false
+shape_visible = false
+script = ExtResource( 8 )
+
+[node name="DodgeButton" type="TouchScreenButton" parent="UI/HUD/Node2D"]
+position = Vector2( 13, 371 )
+normal = ExtResource( 5 )
+shape_centered = false
+shape_visible = false
+script = ExtResource( 8 )
+
 [connection signal="pressed" from="UI/HUD/Inventory/HealButton/TouchButton" to="." method="UseKit"]
 [connection signal="pressed" from="UI/HUD/Inventory/CloseButton/TouchButton" to="." method="ToggleInventory"]
