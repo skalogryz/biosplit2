@@ -107,7 +107,7 @@ public class Main : Node2D
 			if (enemyHp <= 0)
 			{
 				respawn -= delta;
-				if (respawn <= 0) { wave++; enemyMax = (int)Math.Min(int.MaxValue, (long)EnemyHealth + (wave-1L)*15); enemyHp = enemyMax; enemyClock=0; enemyHurt=0; enemyPose=0; message="Новый противник!"; }
+				if (respawn <= 0) { wave++; enemyMax = EnemyHealth; enemyHp = enemyMax; enemyClock=0; enemyHurt=0; enemyPose=0; enemyFlash=0; enemy.Modulate=enemyColor; enemy.Play("idle"); enemy.Frame=0; message="Новый противник!"; }
 			}
 			else
 			{
@@ -266,6 +266,7 @@ public class Main : Node2D
 		}
 	}
 }
+
 
 
 
