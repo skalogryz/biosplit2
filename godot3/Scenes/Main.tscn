@@ -47,6 +47,14 @@ ShootButtonPath = NodePath("UI/HUD/Node2D/ShootButton")
 DodgeButtonPath = NodePath("UI/HUD/Node2D/DodgeButton")
 BlockButtonPath = NodePath("UI/HUD/Node2D/BlockButton")
 InventoryButtonPath = NodePath("UI/HUD/Node2D/InventoryButton2")
+HealthLabelPath = NodePath("UI/HUD/HealthLabel")
+RageLabelPath = NodePath("UI/HUD/RageLabel")
+HealthBarPath = NodePath("UI/HUD/HealthBar")
+RageBarPath = NodePath("UI/HUD/RageBar")
+EnemyBarPath = NodePath("UI/HUD/EnemyBar")
+StatusLabelPath = NodePath("UI/HUD/Status")
+EnemyStatusLabelPath = NodePath("UI/HUD/EnemyStatus")
+InventoryLabelPath = NodePath("UI/HUD/Inventory/InventoryText")
 
 [node name="Background" type="ParallaxBackground" parent="."]
 layer = -10
@@ -60,6 +68,13 @@ centered = false
 
 [node name="Combatants" type="Node2D" parent="."]
 
+[node name="Enemy" type="AnimatedSprite" parent="Combatants"]
+position = Vector2( 595.2, 286.2 )
+scale = Vector2( 1.575, 1.575 )
+frames = ExtResource( 11 )
+animation = "idle"
+playing = true
+
 [node name="Player" type="AnimatedSprite" parent="Combatants"]
 position = Vector2( 374.4, 286.2 )
 scale = Vector2( 1.575, 1.575 )
@@ -72,14 +87,6 @@ visible = false
 points = PoolVector2Array( 7.781, -109.724, 18.019, -108.514, 28.098, -106.351, 37.93, -103.254, 47.429, -99.249, 56.512, -94.374, 65.099, -88.669, 73.113, -82.185, 80.486, -74.98, 87.151, -67.117, 93.052, -58.663, 98.135, -49.695, 102.356, -40.29, 105.678, -30.531, 108.072, -20.504, 109.517, -10.297, 110, 0, 109.517, 10.297, 108.072, 20.504, 105.678, 30.531, 102.356, 40.29, 98.135, 49.695, 93.052, 58.663, 87.151, 67.117, 80.486, 74.98, 73.113, 82.185, 65.099, 88.669, 56.512, 94.374, 47.429, 99.249, 37.93, 103.254, 28.098, 106.351, 18.019, 108.514, 7.781, 109.724 )
 width = 2.54
 default_color = Color( 0.467, 0.733, 1, 1 )
-
-[node name="Enemy" type="AnimatedSprite" parent="Combatants"]
-position = Vector2( 595.2, 286.2 )
-scale = Vector2( 1.575, 1.575 )
-frames = ExtResource( 11 )
-animation = "idle"
-playing = true
-flip_h = true
 
 [node name="ShotTrail" type="Line2D" parent="Combatants"]
 visible = false
@@ -111,13 +118,21 @@ margin_top = -158.0
 mouse_filter = 2
 color = Color( 0.02, 0.04, 0.06, 0.94 )
 
-[node name="Stats" type="Label" parent="UI/HUD"]
-margin_left = 24.0
-margin_top = 15.0
-margin_right = 500.0
-margin_bottom = 43.0
+[node name="HealthLabel" type="Label" parent="UI/HUD"]
+margin_left = 514.0
+margin_top = 18.0
+margin_right = 644.0
+margin_bottom = 46.0
 rect_scale = Vector2( 1.5, 1.5 )
-text = "BIOSPLIT 2 | HP 100 | ЯРОСТЬ 0/100"
+text = "ЖИЗНЬ: 100/100"
+
+[node name="RageLabel" type="Label" parent="UI/HUD"]
+margin_left = 756.0
+margin_top = 19.0
+margin_right = 878.0
+margin_bottom = 47.0
+rect_scale = Vector2( 1.5, 1.5 )
+text = "ЯРОСТЬ: 0/100"
 
 [node name="Status" type="Label" parent="UI/HUD"]
 visible = false
@@ -133,13 +148,15 @@ text = "Ударьте врага, чтобы накопить ярость."
 [node name="EnemyStatus" type="Label" parent="UI/HUD"]
 anchor_left = 0.6
 anchor_right = 0.6
-margin_top = 20.0
-margin_right = 340.0
-margin_bottom = 48.0
+margin_left = -4.0
+margin_top = 92.0
+margin_right = 134.0
+margin_bottom = 120.0
 rect_scale = Vector2( 1.375, 1.375 )
 text = "ВРАГ 1 • 80/80"
 
 [node name="HealthBar" type="ProgressBar" parent="UI/HUD"]
+visible = false
 anchor_right = 0.28
 margin_left = 24.0
 margin_top = 59.0
@@ -151,6 +168,7 @@ value = 100.0
 percent_visible = false
 
 [node name="RageBar" type="ProgressBar" parent="UI/HUD"]
+visible = false
 anchor_right = 0.28
 margin_left = 24.0
 margin_top = 83.0

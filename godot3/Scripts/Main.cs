@@ -17,6 +17,14 @@ public class Main : Node2D
 	[Export] public NodePath DodgeButtonPath = new NodePath("");
 	[Export] public NodePath BlockButtonPath = new NodePath("");
 	[Export] public NodePath InventoryButtonPath = new NodePath("");
+	[Export] public NodePath HealthLabelPath = new NodePath("");
+	[Export] public NodePath RageLabelPath = new NodePath("");
+		[Export] public NodePath HealthBarPath = new NodePath("");
+	[Export] public NodePath RageBarPath = new NodePath("");
+	[Export] public NodePath EnemyBarPath = new NodePath("");
+	[Export] public NodePath StatusLabelPath = new NodePath("");
+	[Export] public NodePath EnemyStatusLabelPath = new NodePath("");
+	[Export] public NodePath InventoryLabelPath = new NodePath("");
 	private ParallaxBackground background;
 	private ParallaxLayer panorama;
 	private AnimatedSprite player, enemy;
@@ -24,7 +32,7 @@ public class Main : Node2D
 	private Vector2 playerOrigin, enemyOrigin, backgroundOrigin;
 	private Color playerColor;
 	private string playerAction = "attack";
-	private Label stats, status, enemyStatus, inventoryText;
+	private Label healthLabel, rageLabel, status, enemyStatus, inventoryText;
 	private ProgressBar healthBar, rageBar, enemyBar;
 	private TouchScreenButton[] actions = new TouchScreenButton[5];
 	private Panel inventory;
@@ -47,12 +55,13 @@ public class Main : Node2D
 		playerOrigin = player.Position;
 		enemyOrigin = enemy.Position;
 		playerColor = player.Modulate;
-		stats = GetNode<Label>("UI/HUD/Stats");
-		status = GetNode<Label>("UI/HUD/Status");
-		enemyStatus = GetNode<Label>("UI/HUD/EnemyStatus");
-		healthBar = GetNode<ProgressBar>("UI/HUD/HealthBar");
-		rageBar = GetNode<ProgressBar>("UI/HUD/RageBar");
-		enemyBar = GetNode<ProgressBar>("UI/HUD/EnemyBar");
+		healthLabel = GetOptionalNode<Label>(HealthLabelPath);
+		rageLabel = GetOptionalNode<Label>(RageLabelPath);
+		status = GetOptionalNode<Label>(StatusLabelPath);
+		enemyStatus = GetOptionalNode<Label>(EnemyStatusLabelPath);
+		healthBar = GetOptionalNode<ProgressBar>(HealthBarPath);
+		rageBar = GetOptionalNode<ProgressBar>(RageBarPath);
+		enemyBar = GetOptionalNode<ProgressBar>(EnemyBarPath);
 		actions = new[]
 		{
 			BindActionButton(PunchButtonPath, nameof(Punch), nameof(PunchButtonPath)),
@@ -62,7 +71,7 @@ public class Main : Node2D
 			BindActionButton(InventoryButtonPath, nameof(ToggleInventory), nameof(InventoryButtonPath))
 		};
 		inventory = GetNode<Panel>("UI/HUD/Inventory");
-		inventoryText = inventory.GetNode<Label>("InventoryText");
+		inventoryText = GetOptionalNode<Label>(InventoryLabelPath);
 		heal = inventory.GetNode<TouchActionButton>("HealButton/TouchButton");
 		inventory.Visible = false;
 		Refresh();
@@ -193,17 +202,26 @@ public class Main : Node2D
 			button.Modulate = enabled ? Colors.White : new Color(0.45f, 0.45f, 0.45f, 1);
 		}
 	}
+		private T GetOptionalNode<T>(NodePath path) where T : Node
+	{
+		if (path == null || path.IsEmpty()) return null;
+		return GetNodeOrNull<Node>(path) as T;
+	}
 	private void Refresh()
 	{
-		stats.Text="BIOSPLIT 2   |   HP "+hp+"   |   ЯРОСТЬ "+rage+"/100";
+		if (Godot.Object.IsInstanceValid(healthLabel)) healthLabel.Text = "ЖИЗНЬ: " + hp + "/100";
+		if (Godot.Object.IsInstanceValid(rageLabel)) rageLabel.Text = "ЯРОСТЬ: " + rage + "/100";
 		bool warning=enemyHp>0 && enemyClock>=Mathf.Max(1.2f,EnemyAttackInterval)-Mathf.Max(0.1f,EnemyWarningTime);
-		enemyStatus.Text=enemyHp<=0 ? "ПОБЕДА! +10 монет" : "ВРАГ "+wave+"  •  "+enemyHp+"/"+enemyMax+(warning ? "   ⚠ АТАКУЕТ!" : "");
-		enemyStatus.Modulate=warning ? new Color("ff8a5b") : Colors.White;
-		status.Text=message; healthBar.Value=hp; rageBar.Value=rage; enemyBar.MaxValue=enemyMax; enemyBar.Value=enemyHp;
+		if (Godot.Object.IsInstanceValid(enemyStatus)) enemyStatus.Text=enemyHp<=0 ? "ПОБЕДА! +10 монет" : "ВРАГ "+wave+"  •  "+enemyHp+"/"+enemyMax+(warning ? "   ⚠ АТАКУЕТ!" : "");
+		if (Godot.Object.IsInstanceValid(enemyStatus)) enemyStatus.Modulate=warning ? new Color("ff8a5b") : Colors.White;
+		if (Godot.Object.IsInstanceValid(status)) status.Text = message;
+		if (Godot.Object.IsInstanceValid(healthBar)) healthBar.Value = hp;
+		if (Godot.Object.IsInstanceValid(rageBar)) rageBar.Value = rage;
+		if (Godot.Object.IsInstanceValid(enemyBar)) { enemyBar.MaxValue = enemyMax; enemyBar.Value = enemyHp; }
 		SetButtonEnabled(actions[0], CanAct()); SetButtonEnabled(actions[1], CanAct() && rage >= Math.Max(1, ShotCost));
 		if (actions[1] is TouchActionButton shootButton) shootButton.Text="ВЫСТРЕЛ [2]  "+ShotCost+" ЯР";
 		SetButtonEnabled(actions[2], CanAct() && dodgeCooldown <= 0); SetButtonEnabled(actions[3], CanAct()); SetButtonEnabled(actions[4], !gameOver);
-		inventoryText.Text="ИНВЕНТАРЬ\n\nМонеты: "+coins+"\nАптечки: "+kits+"\nБой приостановлен";
+		if (Godot.Object.IsInstanceValid(inventoryText)) inventoryText.Text="ИНВЕНТАРЬ\n\nМонеты: "+coins+"\nАптечки: "+kits+"\nБой приостановлен";
 		heal.Disabled=kits<=0 || hp>=100;
 	}
 	public override void _UnhandledKeyInput(InputEventKey key)
@@ -220,6 +238,8 @@ public class Main : Node2D
 		}
 	}
 }
+
+
 
 
 
