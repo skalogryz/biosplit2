@@ -9,8 +9,8 @@ public class Main : Node2D
 	[Export] public int ShotCost = 30;
 	[Export] public int PunchDamage = 12;
 	[Export] public int ShotDamage = 40;
-    [Export] public int PunchCooldownMs = 260;
-    [Export] public int ShotCooldownMs = 550;
+	[Export] public int PunchCooldownMs = 260;
+	[Export] public int ShotCooldownMs = 550;
 	[Export] public float ScrollPerPunch = 32;
 	[Export] public int EnemyDamage = 15;
 	[Export] public int EnemyHealth = 80;
@@ -45,7 +45,7 @@ public class Main : Node2D
 	private TouchActionButton heal;
 	private int hp, rage, enemyHp, enemyMax, wave = 1, coins, kits = 2;
 	private float scroll, targetScroll, cooldown, pose, defense, dodgeCooldown;
-	private float enemyClock, enemyPose, respawn, flash, enemyFlash;
+	private float enemyClock, enemyPose, respawn, flash, enemyFlash, enemyHurt;
 	private bool blocking, dodging, gameOver;
 	private string message = "Ударьте врага, чтобы накопить ярость.";
 
@@ -101,20 +101,20 @@ public class Main : Node2D
 		if (!inventory.Visible && !gameOver)
 		{
 			cooldown = Mathf.Max(0,cooldown-delta); dodgeCooldown = Mathf.Max(0,dodgeCooldown-delta);
-			pose = Mathf.Max(0,pose-delta); enemyPose = Mathf.Max(0,enemyPose-delta);
+			pose = Mathf.Max(0,pose-delta); enemyPose = Mathf.Max(0,enemyPose-delta); enemyHurt = Mathf.Max(0,enemyHurt-delta);
 			defense = Mathf.Max(0,defense-delta); flash = Mathf.Max(0,flash-delta); enemyFlash = Mathf.Max(0,enemyFlash-delta);
 			if (defense <= 0) { blocking = false; dodging = false; }
 			if (enemyHp <= 0)
 			{
 				respawn -= delta;
-				if (respawn <= 0) { wave++; enemyMax = (int)Math.Min(int.MaxValue, (long)EnemyHealth + (wave-1L)*15); enemyHp = enemyMax; enemyClock=0; message="Новый противник!"; }
+				if (respawn <= 0) { wave++; enemyMax = (int)Math.Min(int.MaxValue, (long)EnemyHealth + (wave-1L)*15); enemyHp = enemyMax; enemyClock=0; enemyHurt=0; enemyPose=0; message="Новый противник!"; }
 			}
 			else
 			{
 				enemyClock += delta;
 				if (enemyClock >= Mathf.Max(0.001f,EnemyAttackInterval))
 				{
-					enemyClock = 0; enemy.Frame=0; enemy.Play("attack"); enemyPose=AnimationDuration(enemy, "attack", 0.25f);
+					enemyClock = 0; if (enemyHurt <= 0) { enemy.Play("attack"); enemy.Frame=0; } enemyPose=AnimationDuration(enemy, "attack", 0.25f);
 					if (dodging) message="Уворот: атака прошла мимо!";
 					else { int damage = blocking ? EnemyDamage / 5 : EnemyDamage; hp=Math.Max(0,hp-damage); flash=0.18f; message=blocking ? "Блок: получено " + damage + " урона." : "Враг нанёс " + damage + " урона."; }
 					if(hp==0) { gameOver=true; message="Вы проиграли. Нажмите R для новой игры."; }
@@ -131,7 +131,7 @@ public class Main : Node2D
 		player.Modulate = blocking ? new Color("77bbff") : flash > 0 ? new Color("ff7777") : playerColor;
 		SetAnimation(player, gameOver ? "defeat" : dodging ? "dodge" : blocking ? "block" : pose > 0 ? playerAction : flash > 0 ? "hurt" : "idle");
 		enemy.Modulate = enemyFlash > 0 ? new Color("ff7777") : enemyColor;
-		SetAnimation(enemy, enemyHp <= 0 ? "defeat" : enemyPose > 0 ? "attack" : "idle");
+		SetAnimation(enemy, enemyHp <= 0 ? "defeat" : enemyHurt > 0 ? "hurt" : enemyPose > 0 ? "attack" : "idle");
 		player.Playing = !inventory.Visible && !gameOver;
 		enemy.Playing = !inventory.Visible && !gameOver;
 		shield.Visible = blocking;
@@ -189,6 +189,13 @@ public class Main : Node2D
 	{
 		enemyHp=Math.Max(0,enemyHp-Math.Max(1,damage));
 		enemyFlash = 0.18f;
+		enemyPose = 0;
+		if (enemyHp > 0 && enemy.Frames.HasAnimation("hurt"))
+		{
+			enemyHurt = AnimationDuration(enemy, "hurt", 0.18f);
+			enemy.Play("hurt");
+			enemy.Frame = 0;
+		}
 		enemy.Modulate = new Color("ff7777");
 		if(enemyHp==0) { coins+=10; if(wave%3==0) kits++; respawn=0.9f; enemyClock=0; }
 	}
@@ -259,6 +266,7 @@ public class Main : Node2D
 		}
 	}
 }
+
 
 
 
