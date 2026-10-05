@@ -48,6 +48,38 @@ internal static class Program
         g.Tick(0.001m); Check(g.Punch(), "Handgun cooldown expires at 550 milliseconds");
     }
 
+    private static void KnifeCooldownStamina()
+    {
+        var settings = Quiet();
+        settings.PunchCooldownMs = 260;
+        settings.ShotCooldownMs = 550;
+        settings.ShotCost = 0;
+        var game = new GameSession(settings);
+        game.Tick(1.5m);
+        Check(game.Punch() && game.Stamina == 0m, "Knife consumes accumulated stamina");
+        game.Tick(0.259m);
+        Check(game.Stamina == 0m && game.CooldownRemaining == 0.001m, "Knife cooldown prevents stamina growth");
+        Check(!game.Punch(), "Rejected knife does not restart cooldown");
+        game.Tick(0.001m);
+        Check(game.Stamina == 0m && game.CooldownRemaining == 0m, "No regeneration exactly at cooldown boundary");
+        game.Tick(0.1m);
+        Check(game.Stamina == 0.2m, "Stamina resumes after knife cooldown");
+
+        game.Tick(1.4m); game.Punch(); game.Tick(0.36m);
+        Check(game.Stamina == 0.2m, "Large update regenerates only time after knife cooldown");
+
+        game.Tick(1.4m); game.Punch(); game.SetInventoryOpen(true); game.Tick(5m);
+        Check(game.Stamina == 0m && game.CooldownRemaining == 0.26m, "Inventory pauses knife cooldown and regeneration");
+        game.SetInventoryOpen(false); game.Tick(0.26m);
+        Check(game.Stamina == 0m && game.Shoot(), "Shot can follow knife cooldown");
+        game.Tick(0.1m);
+        Check(game.Stamina == 0.2m && game.CooldownRemaining == 0.45m, "Handgun cooldown allows stamina growth");
+
+        settings.PunchCooldownMs = 0;
+        game = new GameSession(settings); game.Tick(1.5m); game.Punch(); game.Tick(0.1m);
+        Check(game.Stamina == 0.2m, "Zero knife cooldown allows immediate regeneration");
+    }
+
     private static void Defense()
     {
         var s = Quiet(); s.EnemyAttackInterval = 0.5m;
@@ -142,7 +174,7 @@ internal static class Program
     {
         try
         {
-            Weapons(); Defense(); InventoryAndRespawn(); ConfigurationAndBounds();
+            Weapons(); KnifeCooldownStamina(); Defense(); InventoryAndRespawn(); ConfigurationAndBounds();
             Console.WriteLine("PASS: " + checks + " checks without Godot");
             return 0;
         }

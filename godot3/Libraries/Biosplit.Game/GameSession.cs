@@ -7,6 +7,7 @@ namespace Biosplit.Game
     {
         private readonly GameSettings settings;
         private decimal cooldown, dodgeRemaining, enemyClock, respawnRemaining;
+        private bool knifeCooldown;
         public event EventHandler<GameEvent> Changed;
 
         public GameSession(GameSettings settings)
@@ -47,7 +48,8 @@ namespace Biosplit.Game
         public void Tick(decimal seconds)
         {
             if (seconds <= 0m || Paused) return;
-            AccumulateStamina(seconds);
+            // Regenerate only for the part of this update after the knife cooldown expires.
+            AccumulateStamina(knifeCooldown ? Math.Max(0m, seconds - cooldown) : seconds);
             cooldown = Math.Max(0m, cooldown - seconds);
             dodgeRemaining = Math.Max(0m, dodgeRemaining - seconds);
             if (EnemyHealth <= 0)
@@ -83,6 +85,7 @@ namespace Biosplit.Game
             Stamina -= settings.PunchStaminaCost;
             Rage = (int)Math.Min(MaxRage, (long)Rage - settings.PunchCost + settings.RagePerPunch);
             cooldown = settings.PunchCooldownMs / 1000m;
+            knifeCooldown = true;
             Emit(GameEventKind.Punch);
             HurtEnemy(settings.PunchDamage);
             return true;
@@ -94,6 +97,7 @@ namespace Biosplit.Game
             Stamina -= settings.ShotStaminaCost;
             Rage -= settings.ShotCost;
             cooldown = settings.ShotCooldownMs / 1000m;
+            knifeCooldown = false;
             Emit(GameEventKind.Shot);
             HurtEnemy(settings.ShotDamage);
             return true;
@@ -146,7 +150,7 @@ namespace Biosplit.Game
 
         private void AccumulateStamina(decimal seconds)
         {
-            if (Blocking || settings.StaminaGrow <= 0m || Stamina >= MaxStamina) return;
+            if (seconds <= 0m || Blocking || settings.StaminaGrow <= 0m || Stamina >= MaxStamina) return;
             decimal remaining = MaxStamina - Stamina;
             if (seconds >= 1m && settings.StaminaGrow >= remaining / seconds)
                 Stamina = MaxStamina;
