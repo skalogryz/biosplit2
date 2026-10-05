@@ -290,7 +290,7 @@ public class Main : Node2D
 		if (Godot.Object.IsInstanceValid(healthLabel)) healthLabel.Text = $"{game.Health}/{game.MaxHealth}";
 		if (Godot.Object.IsInstanceValid(rageIndicator)) rageIndicator.UpdateRage(game.Rage, RagePointStep);
 		if (Godot.Object.IsInstanceValid(rageLabel)) rageLabel.Text = $"{game.Rage}/{game.MaxRage}";
-		if (Godot.Object.IsInstanceValid(staminaLabel)) staminaLabel.Text = game.Stamina.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) + "/" + game.MaxStamina.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture);
+		if (Godot.Object.IsInstanceValid(staminaLabel)) staminaLabel.Text = game.Stamina.ToString("0", System.Globalization.CultureInfo.InvariantCulture) + "/" + game.MaxStamina.ToString("0", System.Globalization.CultureInfo.InvariantCulture);
 		if (Godot.Object.IsInstanceValid(enemyStatus))
 		{
 			enemyStatus.Text = game.EnemyHealth <= 0 ? "ПОБЕДА! +10 монет" : "ВРАГ " + game.Wave + "  •  " + game.EnemyHealth + "/" + game.EnemyMaxHealth + (game.EnemyWarning ? "   ⚠ АТАКУЕТ!" : "");
