@@ -1,4 +1,4 @@
-[gd_scene load_steps=24 format=2]
+[gd_scene load_steps=22 format=2]
 
 [ext_resource path="res://Scripts/Main.cs" type="Script" id=1]
 [ext_resource path="res://Assets/Fonts/NotoSans-Regular.ttf" type="DynamicFontData" id=2]
@@ -14,6 +14,7 @@
 [ext_resource path="res://Assets/UI/icon_settings.png" type="Texture" id=12]
 [ext_resource path="res://Assets/UI/icon_power.png" type="Texture" id=13]
 [ext_resource path="res://Assets/UI/icon_health.png" type="Texture" id=14]
+[ext_resource path="res://Scenes/Inventory.tscn" type="PackedScene" id=15]
 
 [sub_resource type="DynamicFont" id=1]
 font_data = ExtResource( 2 )
@@ -33,15 +34,6 @@ bg_color = Color( 0.937, 0.486, 0.212, 1 )
 
 [sub_resource type="StyleBoxFlat" id=4]
 bg_color = Color( 0.811765, 0.811765, 0.811765, 1 )
-
-[sub_resource type="StyleBoxFlat" id=7]
-bg_color = Color( 0.04, 0.06, 0.08, 0.98 )
-
-[sub_resource type="RectangleShape2D" id=8]
-extents = Vector2( 186, 22 )
-
-[sub_resource type="RectangleShape2D" id=9]
-extents = Vector2( 186, 21 )
 
 [node name="Main" type="Node2D"]
 script = ExtResource( 1 )
@@ -222,80 +214,7 @@ custom_styles/bg = SubResource( 5 )
 value = 80.0
 percent_visible = false
 
-[node name="Inventory" type="Panel" parent="UI/HUD"]
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-margin_left = -210.0
-margin_top = -140.0
-margin_right = 210.0
-margin_bottom = 140.0
-custom_styles/panel = SubResource( 7 )
-
-[node name="InventoryText" type="Label" parent="UI/HUD/Inventory"]
-margin_left = 24.0
-margin_top = 20.0
-margin_right = 380.0
-margin_bottom = 142.0
-rect_scale = Vector2( 1.375, 1.375 )
-text = "ИНВЕНТАРЬ
-
-Монеты: 0
-Аптечки: 2
-Бой приостановлен"
-
-[node name="HealButton" type="Control" parent="UI/HUD/Inventory"]
-margin_left = 24.0
-margin_top = 155.0
-margin_right = 396.0
-margin_bottom = 199.0
-mouse_filter = 2
-
-[node name="Card" type="Panel" parent="UI/HUD/Inventory/HealButton"]
-anchor_right = 1.0
-anchor_bottom = 1.0
-mouse_filter = 2
-
-[node name="Caption" type="Label" parent="UI/HUD/Inventory/HealButton"]
-anchor_right = 1.0
-anchor_bottom = 1.0
-text = "Аптечка: +40 здоровья"
-align = 1
-valign = 1
-
-[node name="TouchButton" type="TouchScreenButton" parent="UI/HUD/Inventory/HealButton"]
-position = Vector2( 186, 22 )
-shape = SubResource( 8 )
-shape_centered = false
-shape_visible = false
-script = ExtResource( 8 )
-
-[node name="CloseButton" type="Control" parent="UI/HUD/Inventory"]
-margin_left = 24.0
-margin_top = 214.0
-margin_right = 396.0
-margin_bottom = 256.0
-mouse_filter = 2
-
-[node name="Card" type="Panel" parent="UI/HUD/Inventory/CloseButton"]
-anchor_right = 1.0
-anchor_bottom = 1.0
-mouse_filter = 2
-
-[node name="Caption" type="Label" parent="UI/HUD/Inventory/CloseButton"]
-anchor_right = 1.0
-anchor_bottom = 1.0
-text = "Закрыть [I]"
-align = 1
-valign = 1
-
-[node name="TouchButton" type="TouchScreenButton" parent="UI/HUD/Inventory/CloseButton"]
-position = Vector2( 186, 21 )
-shape = SubResource( 9 )
-shape_centered = false
-shape_visible = false
-script = ExtResource( 8 )
+[node name="Inventory" parent="UI/HUD" instance=ExtResource( 15 )]
 
 [node name="Node2D" type="Node2D" parent="UI/HUD"]
 
@@ -334,6 +253,3 @@ normal = ExtResource( 5 )
 shape_centered = false
 shape_visible = false
 script = ExtResource( 8 )
-
-[connection signal="pressed" from="UI/HUD/Inventory/HealButton/TouchButton" to="." method="UseKit"]
-[connection signal="pressed" from="UI/HUD/Inventory/CloseButton/TouchButton" to="." method="ToggleInventory"]

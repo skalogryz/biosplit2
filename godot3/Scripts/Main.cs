@@ -51,7 +51,7 @@ public class Main : Node2D
 	private Label healthLabel, rageLabel, staminaLabel, status, enemyStatus, inventoryText;
 	private ProgressBar healthBar, rageBar, enemyBar;
 	private TouchScreenButton[] actions = new TouchScreenButton[5];
-	private Panel inventory;
+	private InventoryScreen inventory;
 	private TouchActionButton heal;
 	private int hp, rage, enemyHp, enemyMax, wave = 1, coins, kits = 2;
 	private float scroll, targetScroll, cooldown, pose, dodgeRemaining;
@@ -103,7 +103,9 @@ public class Main : Node2D
 			BindActionButton(InventoryButtonPath, nameof(ToggleInventory), nameof(InventoryButtonPath))
 		};
 		if (actions[3] != null && !actions[3].IsConnected("released", this, nameof(ReleaseBlock))) actions[3].Connect("released", this, nameof(ReleaseBlock));
-		inventory = GetNode<Panel>("UI/HUD/Inventory");
+		inventory = GetNode<InventoryScreen>("UI/HUD/Inventory");
+		if (!inventory.IsConnected(nameof(InventoryScreen.HealRequested), this, nameof(UseKit)))
+			inventory.Connect(nameof(InventoryScreen.HealRequested), this, nameof(UseKit));
 		inventoryText = GetOptionalNode<Label>(InventoryLabelPath);
 		heal = inventory.GetNode<TouchActionButton>("HealButton/TouchButton");
 		inventory.Visible = false;
