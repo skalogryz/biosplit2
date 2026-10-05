@@ -9,6 +9,8 @@ public class Main : Node2D
 	internal decimal MaxStamina { get; set; } = 100m;
 	internal decimal StaminaGrow { get; set; } = 2m;
 	internal decimal Stamina { get; private set; }
+	internal decimal DodgeStamina { get; set; } = 10m;
+	[Export] public int DodgeTimeMs = 3000;
 	[Export] public int RagePerPunch = 10;
 	[Export] public int ShotCost = 30;
 	[Export] public int PunchDamage = 12;
@@ -49,7 +51,7 @@ public class Main : Node2D
 	private Panel inventory;
 	private TouchActionButton heal;
 	private int hp, rage, enemyHp, enemyMax, wave = 1, coins, kits = 2;
-	private float scroll, targetScroll, cooldown, pose, defense, dodgeCooldown;
+	private float scroll, targetScroll, cooldown, pose, dodgeRemaining;
 	private float enemyClock, enemyPose, respawn, flash, enemyFlash, enemyHurt;
 	private bool blocking, dodging, gameOver, blockTouchHeld, blockKeyHeld;
 	private string message = "Ударьте врага, чтобы накопить ярость.";
@@ -110,10 +112,10 @@ public class Main : Node2D
 		if (!inventory.Visible && !gameOver)
 		{
 			AccumulateStamina(delta);
-			cooldown = Mathf.Max(0,cooldown-delta); dodgeCooldown = Mathf.Max(0,dodgeCooldown-delta);
+			cooldown = Mathf.Max(0,cooldown-delta);
 			pose = Mathf.Max(0,pose-delta); enemyPose = Mathf.Max(0,enemyPose-delta); enemyHurt = Mathf.Max(0,enemyHurt-delta);
-			defense = Mathf.Max(0,defense-delta); flash = Mathf.Max(0,flash-delta); enemyFlash = Mathf.Max(0,enemyFlash-delta);
-			if (defense <= 0) dodging = false;
+			dodgeRemaining = Mathf.Max(0, dodgeRemaining - delta); flash = Mathf.Max(0,flash-delta); enemyFlash = Mathf.Max(0,enemyFlash-delta);
+			dodging = dodgeRemaining > 0;
 			if (enemyHp <= 0)
 			{
 				respawn -= delta;
@@ -137,10 +139,10 @@ public class Main : Node2D
 		float width = panorama.MotionMirroring.x;
 		if (width > 0 && scroll >= width) { scroll -= width; targetScroll -= width; }
 		background.ScrollOffset = backgroundOrigin + new Vector2(-scroll, 0);
-		player.Position = playerOrigin + new Vector2((dodging ? -85 : 0) + (pose > 0 ? 22 : 0), 0);
+		player.Position = playerOrigin + new Vector2(dodging ? -90 : pose > 0 ? 22 : 0, 0);
 		enemy.Position = enemyOrigin + new Vector2(enemyPose > 0 ? -25 : 0, 0);
 		player.Modulate = DamageFlashEnabled && flash > 0 ? new Color("ff7777") : playerColor;
-		SetAnimation(player, gameOver ? "defeat" : dodging ? "dodge" : blocking ? "block" : pose > 0 ? playerAction : flash > 0 ? "hurt" : "idle");
+		SetAnimation(player, gameOver ? "defeat" : blocking ? "block" : pose > 0 ? playerAction : dodging ? "dodge" : flash > 0 ? "hurt" : "idle");
 		enemy.Modulate = DamageFlashEnabled && enemyFlash > 0 ? new Color("ff7777") : enemyColor;
 		SetAnimation(enemy, enemyHp <= 0 ? "defeat" : enemyHurt > 0 ? "hurt" : enemyPose > 0 ? "attack" : "idle");
 		player.Playing = !inventory.Visible && !gameOver;
@@ -176,7 +178,7 @@ public class Main : Node2D
 	private bool CanAct() { return !blocking && !gameOver && !inventory.Visible && enemyHp>0 && cooldown<=0; }
 	public void Punch()
 	{
-		if(!CanAct()) return;
+		if(!CanAct() || dodging) return;
 		rage=(int)Math.Min(MaxRage, (long)rage + Math.Max(1, RagePerPunch)); targetScroll+=Mathf.Max(0,ScrollPerPunch);
 		StartPlayerAnimation("attack"); pose=AnimationDuration(player, "attack", 0.20f); cooldown=Math.Max(0, PunchCooldownMs) / 1000f; HurtEnemy(PunchDamage); message="Удар! +"+RagePerPunch+" ярости.";
 	}
@@ -185,10 +187,22 @@ public class Main : Node2D
 		if(!CanAct() || rage<Math.Max(1,ShotCost)) return;
 		rage-=Math.Max(1,ShotCost); StartPlayerAnimation("shoot"); pose=AnimationDuration(player, "shoot", 0.23f); cooldown=Math.Max(0, ShotCooldownMs) / 1000f; HurtEnemy(ShotDamage); message="Выстрел! −"+ShotCost+" ярости.";
 	}
+	private bool CanDodge()
+	{
+		return !blocking && !dodging && !gameOver && !inventory.Visible && enemyHp > 0 && Stamina >= DodgeStamina;
+	}
 	public void Dodge()
 	{
-		if(!CanAct() || dodgeCooldown>0) return;
-		blocking=false; dodging=true; defense=0.65f; dodgeCooldown=1.1f; cooldown=0.2f; message="Уворот: 0,65 секунды неуязвимости.";
+		if (!CanDodge()) return;
+		Stamina -= DodgeStamina;
+		dodging = true;
+		dodgeRemaining = Math.Max(1, DodgeTimeMs) / 1000f;
+		pose = 0;
+		flash = 0;
+		player.Position = playerOrigin + new Vector2(-90, 0);
+		SetAnimation(player, "dodge");
+		message = "Отскок: атаки врага не причиняют урона.";
+		Refresh();
 	}
 	public void Block()
 	{
@@ -205,8 +219,6 @@ public class Main : Node2D
 		blocking = !gameOver && (blockTouchHeld || blockKeyHeld);
 		if (blocking)
 		{
-			dodging = false;
-			defense = 0;
 			pose = 0;
 			flash = 0;
 			SetAnimation(player, "block");
@@ -297,9 +309,9 @@ public class Main : Node2D
 		if (Godot.Object.IsInstanceValid(healthBar)) { healthBar.MaxValue = MaxHealth; healthBar.Value = hp; }
 		if (Godot.Object.IsInstanceValid(rageBar)) { rageBar.MaxValue = MaxRage; rageBar.Value = rage; }
 		if (Godot.Object.IsInstanceValid(enemyBar)) { enemyBar.MaxValue = enemyMax; enemyBar.Value = enemyHp; }
-		SetButtonEnabled(actions[0], CanAct()); SetButtonEnabled(actions[1], CanAct() && rage >= Math.Max(1, ShotCost));
+		SetButtonEnabled(actions[0], CanAct() && !dodging); SetButtonEnabled(actions[1], CanAct() && rage >= Math.Max(1, ShotCost));
 		if (actions[1] is TouchActionButton shootButton) shootButton.Text="ВЫСТРЕЛ [2]  "+ShotCost+" ЯР";
-		SetButtonEnabled(actions[2], CanAct() && dodgeCooldown <= 0); SetButtonEnabled(actions[3], !gameOver); SetButtonEnabled(actions[4], !gameOver);
+		SetButtonEnabled(actions[2], CanDodge()); SetButtonEnabled(actions[3], !gameOver); SetButtonEnabled(actions[4], !gameOver);
 		if (Godot.Object.IsInstanceValid(inventoryText)) inventoryText.Text="ИНВЕНТАРЬ\n\nМонеты: "+coins+"\nАптечки: "+kits+"\nБой приостановлен";
 		heal.Disabled=kits<=0 || hp>=MaxHealth;
 	}

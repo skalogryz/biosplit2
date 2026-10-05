@@ -21,6 +21,10 @@ public static class HeroConfiguration
             if (stamina >= 0m) game.MaxStamina = stamina;
             decimal grow = ini.GetDecimal("hero", "staminagrow", game.StaminaGrow);
             if (grow >= 0m) game.StaminaGrow = grow;
+            decimal dodgeStamina = ini.GetDecimal("hero", "dodgestamina", game.DodgeStamina);
+            if (dodgeStamina >= 0m) game.DodgeStamina = dodgeStamina;
+            int dodgeTime = ini.GetInt("hero", "dodgetime", game.DodgeTimeMs);
+            if (dodgeTime > 0) game.DodgeTimeMs = dodgeTime;
         }
         catch (Exception error) when (error is IOException || error is UnauthorizedAccessException)
         {
