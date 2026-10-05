@@ -61,7 +61,7 @@ public class Main : Node2D
 	private TouchActionButton heal;
 	// Presentation timers only. Combat timing belongs to GameSession.
 	private float scroll, targetScroll, pose, enemyPose, flash, enemyFlash, enemyHurt;
-	private bool blockTouchHeld, blockKeyHeld;
+	private bool blockTouchHeld, blockKeyHeld, punchTouchHeld, punchKeyHeld;
 	private string message = "Ударьте врага, чтобы накопить ярость.";
 
 	public override void _Ready()
@@ -95,13 +95,15 @@ public class Main : Node2D
 		enemyBar = Optional<ProgressBar>(EnemyBarPath);
 		actions = new[]
 		{
-			BindActionButton(PunchButtonPath, nameof(Punch), nameof(PunchButtonPath)),
+			BindActionButton(PunchButtonPath, nameof(PressPunch), nameof(PunchButtonPath)),
 			BindActionButton(ShootButtonPath, nameof(Shoot), nameof(ShootButtonPath)),
 			BindActionButton(DodgeButtonPath, nameof(Dodge), nameof(DodgeButtonPath)),
 			BindActionButton(BlockButtonPath, nameof(Block), nameof(BlockButtonPath)),
 			BindActionButton(InventoryButtonPath, nameof(ToggleInventory), nameof(InventoryButtonPath))
 		};
-		if (actions[3] != null && !actions[3].IsConnected("released", this, nameof(ReleaseBlock)))
+		if (actions[0] != null && !actions[0].IsConnected("released", this, nameof(ReleasePunch)))
+            actions[0].Connect("released", this, nameof(ReleasePunch));
+        if (actions[3] != null && !actions[3].IsConnected("released", this, nameof(ReleaseBlock)))
 			actions[3].Connect("released", this, nameof(ReleaseBlock));
 		inventory = GetNode<InventoryScreen>("UI/HUD/Inventory");
 		if (!inventory.IsConnected(nameof(InventoryScreen.HealRequested), this, nameof(UseKit)))
@@ -131,6 +133,8 @@ public class Main : Node2D
 			enemyFlash = Mathf.Max(0, enemyFlash - delta);
 		}
 		game.Tick((decimal)delta);
+        // Input intent only; GameSession checks cooldown, resources and combat state.
+        if (punchTouchHeld || punchKeyHeld) game.Punch();
 		if (!game.Paused) scroll = Mathf.Lerp(scroll, targetScroll, Mathf.Min(1, delta * 12));
 		float width = panorama.MotionMirroring.x;
 		if (width > 0 && scroll >= width) { scroll -= width; targetScroll -= width; }
@@ -214,6 +218,8 @@ public class Main : Node2D
 	}
 
 	public void Punch() { game.Punch(); Render(); }
+    public void PressPunch() { punchTouchHeld = true; Punch(); }
+    public void ReleasePunch() { punchTouchHeld = false; }
 	public void Shoot() { game.Shoot(); Render(); }
 	public void Dodge() { game.Dodge(); Render(); }
 	public void Block() { blockTouchHeld = true; UpdateBlock(); }
@@ -226,6 +232,8 @@ public class Main : Node2D
 	public override void _Input(InputEvent inputEvent)
 	{
 		// Receive release even if a Control consumes the key event.
+        if (inputEvent is InputEventKey punchKey && punchKey.Scancode == (uint)KeyList.Slash && !punchKey.Pressed)
+            punchKeyHeld = false;
 		if (inputEvent is InputEventKey key && key.Scancode == (uint)KeyList.Z && !key.Pressed)
 		{
 			blockKeyHeld = false;
@@ -238,7 +246,7 @@ public class Main : Node2D
 		if (!key.Pressed || key.Echo) return;
 		switch ((KeyList)key.Scancode)
 		{
-			case KeyList.Slash: Punch(); break;
+			case KeyList.Slash: punchKeyHeld = true; Punch(); break;
 			case KeyList.Apostrophe: Shoot(); break;
 			case KeyList.A: Dodge(); break;
 			case KeyList.Z: blockKeyHeld = true; UpdateBlock(); break;
