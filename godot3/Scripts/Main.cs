@@ -39,7 +39,7 @@ public class Main : Node2D
 	private ParallaxBackground background;
 	private ParallaxLayer panorama;
 	private AnimatedSprite player, enemy;
-	private Line2D shield, shotTrail;
+	private Line2D shotTrail;
 	private Vector2 playerOrigin, enemyOrigin, backgroundOrigin;
 	private Color playerColor, enemyColor;
 	private string playerAction = "attack";
@@ -51,7 +51,7 @@ public class Main : Node2D
 	private int hp, rage, enemyHp, enemyMax, wave = 1, coins, kits = 2;
 	private float scroll, targetScroll, cooldown, pose, defense, dodgeCooldown;
 	private float enemyClock, enemyPose, respawn, flash, enemyFlash, enemyHurt;
-	private bool blocking, dodging, gameOver;
+	private bool blocking, dodging, gameOver, blockTouchHeld, blockKeyHeld;
 	private string message = "Ударьте врага, чтобы накопить ярость.";
 
 	public override void _Ready()
@@ -76,7 +76,6 @@ public class Main : Node2D
 		backgroundOrigin = background.ScrollOffset;
 		player = GetNode<AnimatedSprite>("Combatants/Player");
 		enemy = GetNode<AnimatedSprite>("Combatants/Enemy");
-		shield = player.GetNode<Line2D>("BlockShield");
 		shotTrail = GetNode<Line2D>("Combatants/ShotTrail");
 		playerOrigin = player.Position;
 		enemyOrigin = enemy.Position;
@@ -98,6 +97,7 @@ public class Main : Node2D
 			BindActionButton(BlockButtonPath, nameof(Block), nameof(BlockButtonPath)),
 			BindActionButton(InventoryButtonPath, nameof(ToggleInventory), nameof(InventoryButtonPath))
 		};
+		if (actions[3] != null && !actions[3].IsConnected("released", this, nameof(ReleaseBlock))) actions[3].Connect("released", this, nameof(ReleaseBlock));
 		inventory = GetNode<Panel>("UI/HUD/Inventory");
 		inventoryText = GetOptionalNode<Label>(InventoryLabelPath);
 		heal = inventory.GetNode<TouchActionButton>("HealButton/TouchButton");
@@ -113,7 +113,7 @@ public class Main : Node2D
 			cooldown = Mathf.Max(0,cooldown-delta); dodgeCooldown = Mathf.Max(0,dodgeCooldown-delta);
 			pose = Mathf.Max(0,pose-delta); enemyPose = Mathf.Max(0,enemyPose-delta); enemyHurt = Mathf.Max(0,enemyHurt-delta);
 			defense = Mathf.Max(0,defense-delta); flash = Mathf.Max(0,flash-delta); enemyFlash = Mathf.Max(0,enemyFlash-delta);
-			if (defense <= 0) { blocking = false; dodging = false; }
+			if (defense <= 0) dodging = false;
 			if (enemyHp <= 0)
 			{
 				respawn -= delta;
@@ -126,7 +126,8 @@ public class Main : Node2D
 				{
 					enemyClock = 0; if (enemyHurt <= 0) { enemy.Play("attack"); enemy.Frame=0; } enemyPose=AnimationDuration(enemy, "attack", 0.25f);
 					if (dodging) message="Уворот: атака прошла мимо!";
-					else { int damage = blocking ? EnemyDamage / 5 : EnemyDamage; hp=Math.Max(0,hp-damage); flash=0.18f; message=blocking ? "Блок: получено " + damage + " урона." : "Враг нанёс " + damage + " урона."; }
+					else if (blocking) message="Блок: атака отражена!";
+					else { int damage = EnemyDamage; hp=Math.Max(0,hp-damage); flash=0.18f; message="Враг нанёс " + damage + " урона."; }
 					if(hp==0) { gameOver=true; message="Вы проиграли. Нажмите R для новой игры."; }
 				}
 			}
@@ -138,13 +139,12 @@ public class Main : Node2D
 		background.ScrollOffset = backgroundOrigin + new Vector2(-scroll, 0);
 		player.Position = playerOrigin + new Vector2((dodging ? -85 : 0) + (pose > 0 ? 22 : 0), 0);
 		enemy.Position = enemyOrigin + new Vector2(enemyPose > 0 ? -25 : 0, 0);
-		player.Modulate = blocking ? new Color("77bbff") : DamageFlashEnabled && flash > 0 ? new Color("ff7777") : playerColor;
+		player.Modulate = DamageFlashEnabled && flash > 0 ? new Color("ff7777") : playerColor;
 		SetAnimation(player, gameOver ? "defeat" : dodging ? "dodge" : blocking ? "block" : pose > 0 ? playerAction : flash > 0 ? "hurt" : "idle");
 		enemy.Modulate = DamageFlashEnabled && enemyFlash > 0 ? new Color("ff7777") : enemyColor;
 		SetAnimation(enemy, enemyHp <= 0 ? "defeat" : enemyHurt > 0 ? "hurt" : enemyPose > 0 ? "attack" : "idle");
 		player.Playing = !inventory.Visible && !gameOver;
 		enemy.Playing = !inventory.Visible && !gameOver;
-		shield.Visible = blocking;
 		shotTrail.Visible = pose > 0 && playerAction == "shoot";
 		if (shotTrail.Visible)
 		{
@@ -173,7 +173,7 @@ public class Main : Node2D
 		player.Play(animation);
 	}
 
-	private bool CanAct() { return !gameOver && !inventory.Visible && enemyHp>0 && cooldown<=0; }
+	private bool CanAct() { return !blocking && !gameOver && !inventory.Visible && enemyHp>0 && cooldown<=0; }
 	public void Punch()
 	{
 		if(!CanAct()) return;
@@ -192,8 +192,35 @@ public class Main : Node2D
 	}
 	public void Block()
 	{
-		if(!CanAct()) return;
-		dodging=false; blocking=true; defense=1.0f; cooldown=0.2f; message="Защита на 1 секунду.";
+		blockTouchHeld = true;
+		UpdateBlock();
+	}
+	public void ReleaseBlock()
+	{
+		blockTouchHeld = false;
+		UpdateBlock();
+	}
+	private void UpdateBlock()
+	{
+		blocking = !gameOver && (blockTouchHeld || blockKeyHeld);
+		if (blocking)
+		{
+			dodging = false;
+			defense = 0;
+			pose = 0;
+			flash = 0;
+			SetAnimation(player, "block");
+			message = "Защита: удерживайте кнопку блока.";
+		}
+	}
+	public override void _Input(InputEvent inputEvent)
+	{
+		// Process release even when a Control consumes keyboard input.
+		if (inputEvent is InputEventKey key && key.Scancode == (uint)KeyList.Key4 && !key.Pressed)
+		{
+			blockKeyHeld = false;
+			UpdateBlock();
+		}
 	}
 	private void HurtEnemy(int damage)
 	{
@@ -247,7 +274,7 @@ public class Main : Node2D
 	}
 		private void AccumulateStamina(float delta)
 	{
-		if (delta <= 0 || StaminaGrow <= 0 || Stamina >= MaxStamina) return;
+		if (blocking || delta <= 0 || StaminaGrow <= 0 || Stamina >= MaxStamina) return;
 		decimal seconds = (decimal)delta;
 		decimal remaining = MaxStamina - Stamina;
 		// Compare before multiplying to avoid overflow for large INI values.
@@ -272,7 +299,7 @@ public class Main : Node2D
 		if (Godot.Object.IsInstanceValid(enemyBar)) { enemyBar.MaxValue = enemyMax; enemyBar.Value = enemyHp; }
 		SetButtonEnabled(actions[0], CanAct()); SetButtonEnabled(actions[1], CanAct() && rage >= Math.Max(1, ShotCost));
 		if (actions[1] is TouchActionButton shootButton) shootButton.Text="ВЫСТРЕЛ [2]  "+ShotCost+" ЯР";
-		SetButtonEnabled(actions[2], CanAct() && dodgeCooldown <= 0); SetButtonEnabled(actions[3], CanAct()); SetButtonEnabled(actions[4], !gameOver);
+		SetButtonEnabled(actions[2], CanAct() && dodgeCooldown <= 0); SetButtonEnabled(actions[3], !gameOver); SetButtonEnabled(actions[4], !gameOver);
 		if (Godot.Object.IsInstanceValid(inventoryText)) inventoryText.Text="ИНВЕНТАРЬ\n\nМонеты: "+coins+"\nАптечки: "+kits+"\nБой приостановлен";
 		heal.Disabled=kits<=0 || hp>=MaxHealth;
 	}
@@ -284,7 +311,7 @@ public class Main : Node2D
 			case KeyList.Key1: Punch(); break;
 			case KeyList.Key2: Shoot(); break;
 			case KeyList.Key3: Dodge(); break;
-			case KeyList.Key4: Block(); break;
+			case KeyList.Key4: blockKeyHeld = true; UpdateBlock(); break;
 			case KeyList.I: case KeyList.Escape: ToggleInventory(); break;
 			case KeyList.R: GetTree().ReloadCurrentScene(); break;
 		}
