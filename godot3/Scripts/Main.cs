@@ -37,6 +37,8 @@ public class Main : Node2D
 	[Export] public NodePath StaminaLabelPath = new NodePath("");
 		[Export] public NodePath HealthBarPath = new NodePath("");
 	[Export] public NodePath RageBarPath = new NodePath("");
+	[Export] public NodePath RageIndicatorPath = new NodePath("");
+	[Export] public int RagePointStep = 10;
 	[Export] public NodePath EnemyBarPath = new NodePath("");
 	[Export] public NodePath StatusLabelPath = new NodePath("");
 	[Export] public NodePath EnemyStatusLabelPath = new NodePath("");
@@ -50,6 +52,7 @@ public class Main : Node2D
 	private string playerAction = "attack";
 	private Label healthLabel, rageLabel, staminaLabel, status, enemyStatus, inventoryText;
 	private ProgressBar healthBar, rageBar, enemyBar;
+	private RageIndicator rageIndicator;
 	private TouchScreenButton[] actions = new TouchScreenButton[5];
 	private InventoryScreen inventory;
 	private TouchActionButton heal;
@@ -72,6 +75,7 @@ public class Main : Node2D
 		enemyHp = enemyMax;
 		MaxHealth = Math.Max(1, MaxHealth);
 		MaxRage = Math.Max(1, MaxRage);
+		RagePointStep = Math.Max(1, MaxRage / 10);
 		hp = MaxHealth;
 		MaxStamina = Math.Max(0m, MaxStamina);
 		StaminaGrow = Math.Max(0m, StaminaGrow);
@@ -93,6 +97,7 @@ public class Main : Node2D
 		enemyStatus = GetOptionalNode<Label>(EnemyStatusLabelPath);
 		healthBar = GetOptionalNode<ProgressBar>(HealthBarPath);
 		rageBar = GetOptionalNode<ProgressBar>(RageBarPath);
+		rageIndicator = GetOptionalNode<RageIndicator>(RageIndicatorPath);
 		enemyBar = GetOptionalNode<ProgressBar>(EnemyBarPath);
 		actions = new[]
 		{
@@ -310,6 +315,7 @@ public class Main : Node2D
 	private void Refresh()
 	{
 		if (Godot.Object.IsInstanceValid(healthLabel)) healthLabel.Text = $"{hp}/{MaxHealth}";
+		if (Godot.Object.IsInstanceValid(rageIndicator)) rageIndicator.UpdateRage(rage, RagePointStep);
 		if (Godot.Object.IsInstanceValid(rageLabel)) rageLabel.Text = $"{rage}/{MaxRage}";
 		if (Godot.Object.IsInstanceValid(staminaLabel)) staminaLabel.Text = Stamina.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) + "/" + MaxStamina.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture);
 		bool warning=enemyHp>0 && enemyClock>=Mathf.Max(0.001f,EnemyAttackInterval)-Mathf.Max(0.1f,EnemyWarningTime);

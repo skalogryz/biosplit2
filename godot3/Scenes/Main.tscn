@@ -1,4 +1,4 @@
-[gd_scene load_steps=22 format=2]
+[gd_scene load_steps=23 format=2]
 
 [ext_resource path="res://Scripts/Main.cs" type="Script" id=1]
 [ext_resource path="res://Assets/Fonts/NotoSans-Regular.ttf" type="DynamicFontData" id=2]
@@ -15,6 +15,7 @@
 [ext_resource path="res://Assets/UI/icon_power.png" type="Texture" id=13]
 [ext_resource path="res://Assets/UI/icon_health.png" type="Texture" id=14]
 [ext_resource path="res://Scenes/Inventory.tscn" type="PackedScene" id=15]
+[ext_resource path="res://Scenes/RageIndicator.tscn" type="PackedScene" id=16]
 
 [sub_resource type="DynamicFont" id=1]
 font_data = ExtResource( 2 )
@@ -49,6 +50,7 @@ RageLabelPath = NodePath("UI/HUD/RageLabel")
 StaminaLabelPath = NodePath("UI/HUD/StaminaLabel")
 HealthBarPath = NodePath("UI/HUD/HealthBar")
 RageBarPath = NodePath("UI/HUD/RageBar")
+RageIndicatorPath = NodePath("UI/HUD/RageIndicator")
 EnemyBarPath = NodePath("UI/HUD/EnemyBar")
 StatusLabelPath = NodePath("UI/HUD/Status")
 EnemyStatusLabelPath = NodePath("UI/HUD/EnemyStatus")
@@ -213,6 +215,12 @@ custom_styles/fg = SubResource( 4 )
 custom_styles/bg = SubResource( 5 )
 value = 80.0
 percent_visible = false
+
+[node name="RageIndicator" parent="UI/HUD" instance=ExtResource( 16 )]
+margin_left = 39.0
+margin_top = 62.0
+margin_right = 219.0
+margin_bottom = 98.0
 
 [node name="Inventory" parent="UI/HUD" instance=ExtResource( 15 )]
 
