@@ -1,0 +1,38 @@
+using System;
+using System.IO;
+using Biosplit.Ini;
+
+namespace Biosplit.Game
+{
+
+    public static class HeroConfiguration
+    {
+        public static void Load(string executableDirectory, GameSettings game, Action<string> warning = null)
+        {
+            string directory = Path.Combine(executableDirectory, "cfg");
+            if (!Directory.Exists(directory)) return;
+            string path = Path.Combine(directory, "main.ini");
+            if (!System.IO.File.Exists(path)) return;
+            try
+            {
+                var ini = IniDocument.Load(path);
+                int health = ini.GetInt("hero", "health", game.MaxHealth);
+                if (health > 0) game.MaxHealth = health;
+                int rage = ini.GetInt("hero", "rage", game.MaxRage);
+                if (rage > 0) game.MaxRage = rage;
+                decimal stamina = ini.GetDecimal("hero", "stamina", game.MaxStamina);
+                if (stamina >= 0m) game.MaxStamina = stamina;
+                decimal grow = ini.GetDecimal("hero", "staminagrow", game.StaminaGrow);
+                if (grow >= 0m) game.StaminaGrow = grow;
+                decimal dodgeStamina = ini.GetDecimal("hero", "dodgestamina", game.DodgeStamina);
+                if (dodgeStamina >= 0m) game.DodgeStamina = dodgeStamina;
+                int dodgeTime = ini.GetInt("hero", "dodgetime", game.DodgeTimeMs);
+                if (dodgeTime > 0) game.DodgeTimeMs = dodgeTime;
+            }
+            catch (Exception error) when (error is IOException || error is UnauthorizedAccessException)
+            {
+                warning?.Invoke("Cannot read main.ini: " + error.Message);
+            }
+        }
+    }
+}

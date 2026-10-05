@@ -6,7 +6,8 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Remove="Libraries\**\*.cs" />
-    <ProjectReference Include="Libraries\Biosplit.Ini\Biosplit.Ini.csproj" />
+    <Compile Remove="Tests\**\*.cs" />
+    <ProjectReference Include="Libraries\Biosplit.Game\Biosplit.Game.csproj" />
   </ItemGroup>
 </Project>
 
