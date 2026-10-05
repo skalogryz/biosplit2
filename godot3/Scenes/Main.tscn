@@ -150,20 +150,20 @@ rect_scale = Vector2( 1.5, 1.5 )
 text = "100/100"
 
 [node name="RageLabel" type="Label" parent="UI/HUD"]
-margin_left = 787.0
-margin_top = 20.0
-margin_right = 847.0
-margin_bottom = 43.0
+margin_left = 137.0
+margin_top = 41.0
+margin_right = 197.0
+margin_bottom = 64.0
 rect_scale = Vector2( 1.5, 1.5 )
 text = "100/100"
 
 [node name="StaminaLabel" type="Label" parent="UI/HUD"]
-margin_left = 24.0
-margin_top = 20.0
-margin_right = 360.0
-margin_bottom = 48.0
+margin_left = 791.0
+margin_top = 19.0
+margin_right = 838.0
+margin_bottom = 47.0
 rect_scale = Vector2( 1.5, 1.5 )
-text = "ВЫНОСЛИВОСТЬ: 0/100"
+text = "0/100"
 
 [node name="Status" type="Label" parent="UI/HUD"]
 visible = false
