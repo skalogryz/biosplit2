@@ -3,8 +3,12 @@ using System;
 
 public class Main : Node2D
 {
+	[Export] public bool DamageFlashEnabled = true;
 	[Export] public int MaxHealth = 100;
 	[Export] public int MaxRage = 100;
+	internal decimal MaxStamina { get; set; } = 100m;
+	internal decimal StaminaGrow { get; set; } = 2m;
+	internal decimal Stamina { get; private set; }
 	[Export] public int RagePerPunch = 10;
 	[Export] public int ShotCost = 30;
 	[Export] public int PunchDamage = 12;
@@ -25,6 +29,7 @@ public class Main : Node2D
 	[Export] public NodePath InventoryButtonPath = new NodePath("");
 	[Export] public NodePath HealthLabelPath = new NodePath("");
 	[Export] public NodePath RageLabelPath = new NodePath("");
+	[Export] public NodePath StaminaLabelPath = new NodePath("");
 		[Export] public NodePath HealthBarPath = new NodePath("");
 	[Export] public NodePath RageBarPath = new NodePath("");
 	[Export] public NodePath EnemyBarPath = new NodePath("");
@@ -38,7 +43,7 @@ public class Main : Node2D
 	private Vector2 playerOrigin, enemyOrigin, backgroundOrigin;
 	private Color playerColor, enemyColor;
 	private string playerAction = "attack";
-	private Label healthLabel, rageLabel, status, enemyStatus, inventoryText;
+	private Label healthLabel, rageLabel, staminaLabel, status, enemyStatus, inventoryText;
 	private ProgressBar healthBar, rageBar, enemyBar;
 	private TouchScreenButton[] actions = new TouchScreenButton[5];
 	private Panel inventory;
@@ -63,6 +68,9 @@ public class Main : Node2D
 		MaxHealth = Math.Max(1, MaxHealth);
 		MaxRage = Math.Max(1, MaxRage);
 		hp = MaxHealth;
+		MaxStamina = Math.Max(0m, MaxStamina);
+		StaminaGrow = Math.Max(0m, StaminaGrow);
+		Stamina = 0m;
 		background = GetNode<ParallaxBackground>("Background");
 		panorama = GetNode<ParallaxLayer>("Background/Panorama");
 		backgroundOrigin = background.ScrollOffset;
@@ -76,6 +84,7 @@ public class Main : Node2D
 		enemyColor = enemy.Modulate;
 		healthLabel = GetOptionalNode<Label>(HealthLabelPath);
 		rageLabel = GetOptionalNode<Label>(RageLabelPath);
+		staminaLabel = GetOptionalNode<Label>(StaminaLabelPath);
 		status = GetOptionalNode<Label>(StatusLabelPath);
 		enemyStatus = GetOptionalNode<Label>(EnemyStatusLabelPath);
 		healthBar = GetOptionalNode<ProgressBar>(HealthBarPath);
@@ -100,6 +109,7 @@ public class Main : Node2D
 	{
 		if (!inventory.Visible && !gameOver)
 		{
+			AccumulateStamina(delta);
 			cooldown = Mathf.Max(0,cooldown-delta); dodgeCooldown = Mathf.Max(0,dodgeCooldown-delta);
 			pose = Mathf.Max(0,pose-delta); enemyPose = Mathf.Max(0,enemyPose-delta); enemyHurt = Mathf.Max(0,enemyHurt-delta);
 			defense = Mathf.Max(0,defense-delta); flash = Mathf.Max(0,flash-delta); enemyFlash = Mathf.Max(0,enemyFlash-delta);
@@ -128,9 +138,9 @@ public class Main : Node2D
 		background.ScrollOffset = backgroundOrigin + new Vector2(-scroll, 0);
 		player.Position = playerOrigin + new Vector2((dodging ? -85 : 0) + (pose > 0 ? 22 : 0), 0);
 		enemy.Position = enemyOrigin + new Vector2(enemyPose > 0 ? -25 : 0, 0);
-		player.Modulate = blocking ? new Color("77bbff") : flash > 0 ? new Color("ff7777") : playerColor;
+		player.Modulate = blocking ? new Color("77bbff") : DamageFlashEnabled && flash > 0 ? new Color("ff7777") : playerColor;
 		SetAnimation(player, gameOver ? "defeat" : dodging ? "dodge" : blocking ? "block" : pose > 0 ? playerAction : flash > 0 ? "hurt" : "idle");
-		enemy.Modulate = enemyFlash > 0 ? new Color("ff7777") : enemyColor;
+		enemy.Modulate = DamageFlashEnabled && enemyFlash > 0 ? new Color("ff7777") : enemyColor;
 		SetAnimation(enemy, enemyHp <= 0 ? "defeat" : enemyHurt > 0 ? "hurt" : enemyPose > 0 ? "attack" : "idle");
 		player.Playing = !inventory.Visible && !gameOver;
 		enemy.Playing = !inventory.Visible && !gameOver;
@@ -196,7 +206,7 @@ public class Main : Node2D
 			enemy.Play("hurt");
 			enemy.Frame = 0;
 		}
-		enemy.Modulate = new Color("ff7777");
+		enemy.Modulate = DamageFlashEnabled ? new Color("ff7777") : enemyColor;
 		if(enemyHp==0) { coins+=10; if(wave%3==0) kits++; respawn=0.9f; enemyClock=0; }
 	}
 	public void ToggleInventory() { if(!gameOver) inventory.Visible=!inventory.Visible; }
@@ -235,10 +245,24 @@ public class Main : Node2D
 		if (path == null || path.IsEmpty()) return null;
 		return GetNodeOrNull<Node>(path) as T;
 	}
+		private void AccumulateStamina(float delta)
+	{
+		if (delta <= 0 || StaminaGrow <= 0 || Stamina >= MaxStamina) return;
+		decimal seconds = (decimal)delta;
+		decimal remaining = MaxStamina - Stamina;
+		// Compare before multiplying to avoid overflow for large INI values.
+		if (seconds >= 1m && StaminaGrow >= remaining / seconds)
+			Stamina = MaxStamina;
+		else if (seconds < 1m && StaminaGrow * seconds >= remaining)
+			Stamina = MaxStamina;
+		else
+			Stamina += StaminaGrow * seconds;
+	}
 	private void Refresh()
 	{
 		if (Godot.Object.IsInstanceValid(healthLabel)) healthLabel.Text = $"{hp}/{MaxHealth}";
 		if (Godot.Object.IsInstanceValid(rageLabel)) rageLabel.Text = $"{rage}/{MaxRage}";
+		if (Godot.Object.IsInstanceValid(staminaLabel)) staminaLabel.Text = Stamina.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) + "/" + MaxStamina.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture);
 		bool warning=enemyHp>0 && enemyClock>=Mathf.Max(0.001f,EnemyAttackInterval)-Mathf.Max(0.1f,EnemyWarningTime);
 		if (Godot.Object.IsInstanceValid(enemyStatus)) enemyStatus.Text=enemyHp<=0 ? "ПОБЕДА! +10 монет" : "ВРАГ "+wave+"  •  "+enemyHp+"/"+enemyMax+(warning ? "   ⚠ АТАКУЕТ!" : "");
 		if (Godot.Object.IsInstanceValid(enemyStatus)) enemyStatus.Modulate=warning ? new Color("ff8a5b") : Colors.White;
@@ -266,6 +290,9 @@ public class Main : Node2D
 		}
 	}
 }
+
+
+
 
 
 

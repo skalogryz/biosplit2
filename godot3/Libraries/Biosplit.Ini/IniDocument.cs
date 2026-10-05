@@ -61,9 +61,21 @@ namespace Biosplit.Ini
                 CultureInfo.InvariantCulture, out value);
         }
 
+                public bool TryGetDecimal(string section, string key, out decimal value)
+        {
+            // No thousands separators: 0.25 is a fraction; 0,25 is invalid.
+            return decimal.TryParse(GetString(section, key), NumberStyles.Float,
+                CultureInfo.InvariantCulture, out value);
+        }
+
+        public decimal GetDecimal(string section, string key, decimal fallback)
+        {
+            return TryGetDecimal(section, key, out decimal value) ? value : fallback;
+        }
         public int GetInt(string section, string key, int fallback)
         {
             return TryGetInt(section, key, out int value) ? value : fallback;
         }
     }
 }
+

@@ -17,6 +17,10 @@ public static class HeroConfiguration
             if (health > 0) game.MaxHealth = health;
             int rage = ini.GetInt("hero", "rage", game.MaxRage);
             if (rage > 0) game.MaxRage = rage;
+            decimal stamina = ini.GetDecimal("hero", "stamina", game.MaxStamina);
+            if (stamina >= 0m) game.MaxStamina = stamina;
+            decimal grow = ini.GetDecimal("hero", "staminagrow", game.StaminaGrow);
+            if (grow >= 0m) game.StaminaGrow = grow;
         }
         catch (Exception error) when (error is IOException || error is UnauthorizedAccessException)
         {
@@ -24,3 +28,4 @@ public static class HeroConfiguration
         }
     }
 }
+

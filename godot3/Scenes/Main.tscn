@@ -45,6 +45,7 @@ extents = Vector2( 186, 21 )
 
 [node name="Main" type="Node2D"]
 script = ExtResource( 1 )
+DamageFlashEnabled = false
 ShotDamage = 80
 PunchButtonPath = NodePath("UI/HUD/Node2D/MeleeButton")
 ShootButtonPath = NodePath("UI/HUD/Node2D/ShootButton")
@@ -53,6 +54,7 @@ BlockButtonPath = NodePath("UI/HUD/Node2D/BlockButton")
 InventoryButtonPath = NodePath("UI/HUD/Node2D/InventoryButton2")
 HealthLabelPath = NodePath("UI/HUD/HealthLabel")
 RageLabelPath = NodePath("UI/HUD/RageLabel")
+StaminaLabelPath = NodePath("UI/HUD/StaminaLabel")
 HealthBarPath = NodePath("UI/HUD/HealthBar")
 RageBarPath = NodePath("UI/HUD/RageBar")
 EnemyBarPath = NodePath("UI/HUD/EnemyBar")
@@ -160,6 +162,14 @@ margin_right = 847.0
 margin_bottom = 43.0
 rect_scale = Vector2( 1.5, 1.5 )
 text = "100/100"
+
+[node name="StaminaLabel" type="Label" parent="UI/HUD"]
+margin_left = 24.0
+margin_top = 20.0
+margin_right = 360.0
+margin_bottom = 48.0
+rect_scale = Vector2( 1.5, 1.5 )
+text = "ВЫНОСЛИВОСТЬ: 0/100"
 
 [node name="Status" type="Label" parent="UI/HUD"]
 visible = false
