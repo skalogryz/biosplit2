@@ -243,7 +243,7 @@ public class Main : Node2D
 	public override void _Input(InputEvent inputEvent)
 	{
 		// Process release even when a Control consumes keyboard input.
-		if (inputEvent is InputEventKey key && key.Scancode == (uint)KeyList.Key4 && !key.Pressed)
+		if (inputEvent is InputEventKey key && key.Scancode == (uint)KeyList.Z && !key.Pressed)
 		{
 			blockKeyHeld = false;
 			UpdateBlock();
@@ -326,7 +326,7 @@ public class Main : Node2D
 		if (Godot.Object.IsInstanceValid(rageBar)) { rageBar.MaxValue = MaxRage; rageBar.Value = rage; }
 		if (Godot.Object.IsInstanceValid(enemyBar)) { enemyBar.MaxValue = enemyMax; enemyBar.Value = enemyHp; }
 		SetButtonEnabled(actions[0], CanPunch()); SetButtonEnabled(actions[1], CanShoot());
-		if (actions[1] is TouchActionButton shootButton) shootButton.Text="ВЫСТРЕЛ [2]  "+ShotCost+" ЯР";
+		if (actions[1] is TouchActionButton shootButton) shootButton.Text="ВЫСТРЕЛ [']  "+ShotCost+" ЯР";
 		SetButtonEnabled(actions[2], CanDodge()); SetButtonEnabled(actions[3], !gameOver); SetButtonEnabled(actions[4], !gameOver);
 		if (Godot.Object.IsInstanceValid(inventoryText)) inventoryText.Text="ИНВЕНТАРЬ\n\nМонеты: "+coins+"\nАптечки: "+kits+"\nБой приостановлен";
 		heal.Disabled=kits<=0 || hp>=MaxHealth;
@@ -336,10 +336,10 @@ public class Main : Node2D
 		if(!key.Pressed || key.Echo) return;
 		switch((KeyList)key.Scancode)
 		{
-			case KeyList.Key1: Punch(); break;
-			case KeyList.Key2: Shoot(); break;
-			case KeyList.Key3: Dodge(); break;
-			case KeyList.Key4: blockKeyHeld = true; UpdateBlock(); break;
+			case KeyList.Slash: Punch(); break;
+			case KeyList.Apostrophe: Shoot(); break;
+			case KeyList.A: Dodge(); break;
+			case KeyList.Z: blockKeyHeld = true; UpdateBlock(); break;
 			case KeyList.I: case KeyList.Escape: ToggleInventory(); break;
 			case KeyList.R: GetTree().ReloadCurrentScene(); break;
 		}

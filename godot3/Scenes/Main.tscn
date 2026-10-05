@@ -144,10 +144,11 @@ rect_scale = Vector2( 1.5, 1.5 )
 text = "100/100"
 
 [node name="RageLabel" type="Label" parent="UI/HUD"]
-margin_left = 39.0
-margin_top = 20.0
-margin_right = 99.0
-margin_bottom = 43.0
+visible = false
+margin_left = 237.0
+margin_top = 25.0
+margin_right = 297.0
+margin_bottom = 48.0
 rect_scale = Vector2( 1.5, 1.5 )
 text = "100/100"
 
@@ -217,10 +218,10 @@ value = 80.0
 percent_visible = false
 
 [node name="RageIndicator" parent="UI/HUD" instance=ExtResource( 16 )]
-margin_left = 39.0
-margin_top = 62.0
-margin_right = 219.0
-margin_bottom = 98.0
+margin_left = 33.0
+margin_top = 24.0
+margin_right = 213.0
+margin_bottom = 60.0
 
 [node name="Inventory" parent="UI/HUD" instance=ExtResource( 15 )]
 
