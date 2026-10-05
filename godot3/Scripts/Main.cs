@@ -13,6 +13,9 @@ public class Main : Node2D
 	[Export] public int DodgeTimeMs = 3000;
 	[Export] public int RagePerPunch = 10;
 	[Export] public int ShotCost = 30;
+	[Export] public int PunchCost = 0;
+	internal decimal PunchStaminaCost { get; set; } = 3m;
+	internal decimal ShotStaminaCost { get; set; } = 0m;
 	[Export] public int PunchDamage = 12;
 	[Export] public int ShotDamage = 40;
 	[Export] public int PunchCooldownMs = 260;
@@ -176,16 +179,21 @@ public class Main : Node2D
 	}
 
 	private bool CanAct() { return !blocking && !gameOver && !inventory.Visible && enemyHp>0 && cooldown<=0; }
+	private bool CanPunch() { return CanAct() && !dodging && rage >= Math.Max(0, PunchCost) && Stamina >= Math.Max(0m, PunchStaminaCost); }
+	private bool CanShoot() { return CanAct() && rage >= Math.Max(0, ShotCost) && Stamina >= Math.Max(0m, ShotStaminaCost); }
 	public void Punch()
 	{
-		if(!CanAct() || dodging) return;
+		if (!CanPunch()) return;
+		Stamina -= Math.Max(0m, PunchStaminaCost);
+		rage -= Math.Max(0, PunchCost);
 		rage=(int)Math.Min(MaxRage, (long)rage + Math.Max(1, RagePerPunch)); targetScroll+=Mathf.Max(0,ScrollPerPunch);
-		StartPlayerAnimation("attack"); pose=AnimationDuration(player, "attack", 0.20f); cooldown=Math.Max(0, PunchCooldownMs) / 1000f; HurtEnemy(PunchDamage); message="Удар! +"+RagePerPunch+" ярости.";
+		StartPlayerAnimation("attack"); pose=AnimationDuration(player, "attack", 0.20f); cooldown=Math.Max(0, PunchCooldownMs) / 1000f; HurtEnemy(PunchDamage); message="Удар! +"+RagePerPunch+" ярости."; Refresh();
 	}
 	public void Shoot()
 	{
-		if(!CanAct() || rage<Math.Max(1,ShotCost)) return;
-		rage-=Math.Max(1,ShotCost); StartPlayerAnimation("shoot"); pose=AnimationDuration(player, "shoot", 0.23f); cooldown=Math.Max(0, ShotCooldownMs) / 1000f; HurtEnemy(ShotDamage); message="Выстрел! −"+ShotCost+" ярости.";
+		if (!CanShoot()) return;
+		Stamina -= Math.Max(0m, ShotStaminaCost);
+		rage-=Math.Max(0,ShotCost); StartPlayerAnimation("shoot"); pose=AnimationDuration(player, "shoot", 0.23f); cooldown=Math.Max(0, ShotCooldownMs) / 1000f; HurtEnemy(ShotDamage); message="Выстрел! −"+ShotCost+" ярости."; Refresh();
 	}
 	private bool CanDodge()
 	{
@@ -309,7 +317,7 @@ public class Main : Node2D
 		if (Godot.Object.IsInstanceValid(healthBar)) { healthBar.MaxValue = MaxHealth; healthBar.Value = hp; }
 		if (Godot.Object.IsInstanceValid(rageBar)) { rageBar.MaxValue = MaxRage; rageBar.Value = rage; }
 		if (Godot.Object.IsInstanceValid(enemyBar)) { enemyBar.MaxValue = enemyMax; enemyBar.Value = enemyHp; }
-		SetButtonEnabled(actions[0], CanAct() && !dodging); SetButtonEnabled(actions[1], CanAct() && rage >= Math.Max(1, ShotCost));
+		SetButtonEnabled(actions[0], CanPunch()); SetButtonEnabled(actions[1], CanShoot());
 		if (actions[1] is TouchActionButton shootButton) shootButton.Text="ВЫСТРЕЛ [2]  "+ShotCost+" ЯР";
 		SetButtonEnabled(actions[2], CanDodge()); SetButtonEnabled(actions[3], !gameOver); SetButtonEnabled(actions[4], !gameOver);
 		if (Godot.Object.IsInstanceValid(inventoryText)) inventoryText.Text="ИНВЕНТАРЬ\n\nМонеты: "+coins+"\nАптечки: "+kits+"\nБой приостановлен";
