@@ -33,6 +33,8 @@ public class Main : Node2D
 	[Export] public NodePath DodgeButtonPath = new NodePath("");
 	[Export] public NodePath BlockButtonPath = new NodePath("");
 	[Export] public NodePath InventoryButtonPath = new NodePath("");
+	[Export] public NodePath SettingsButtonPath = new NodePath("");
+	[Export] public NodePath ConsoleScreenPath = new NodePath("");
 	[Export] public NodePath HealthLabelPath = new NodePath("");
 	[Export] public NodePath RageLabelPath = new NodePath("");
 	[Export] public NodePath StaminaLabelPath = new NodePath("");
@@ -58,6 +60,7 @@ public class Main : Node2D
 	private RageIndicator rageIndicator;
 	private TouchScreenButton[] actions = new TouchScreenButton[5];
 	private InventoryScreen inventory;
+	private ConsoleScreen console;
 	private TouchActionButton heal;
 	// Presentation timers only. Combat timing belongs to GameSession.
 	private float scroll, targetScroll, pose, enemyPose, flash, enemyFlash, enemyHurt;
@@ -102,8 +105,8 @@ public class Main : Node2D
 			BindActionButton(InventoryButtonPath, nameof(ToggleInventory), nameof(InventoryButtonPath))
 		};
 		if (actions[0] != null && !actions[0].IsConnected("released", this, nameof(ReleasePunch)))
-            actions[0].Connect("released", this, nameof(ReleasePunch));
-        if (actions[3] != null && !actions[3].IsConnected("released", this, nameof(ReleaseBlock)))
+			actions[0].Connect("released", this, nameof(ReleasePunch));
+		if (actions[3] != null && !actions[3].IsConnected("released", this, nameof(ReleaseBlock)))
 			actions[3].Connect("released", this, nameof(ReleaseBlock));
 		inventory = GetNode<InventoryScreen>("UI/HUD/Inventory");
 		if (!inventory.IsConnected(nameof(InventoryScreen.HealRequested), this, nameof(UseKit)))
@@ -113,6 +116,11 @@ public class Main : Node2D
 		inventoryText = Optional<Label>(InventoryLabelPath);
 		heal = inventory.GetNode<TouchActionButton>("HealButton/TouchButton");
 		inventory.Visible = false;
+		console = Optional<ConsoleScreen>(ConsoleScreenPath);
+		if (Godot.Object.IsInstanceValid(console)) console.Hide();
+		var settingsButton = Optional<TouchScreenButton>(SettingsButtonPath);
+		if (Godot.Object.IsInstanceValid(settingsButton) && !settingsButton.IsConnected("pressed", this, nameof(ToggleConsole)))
+			settingsButton.Connect("pressed", this, nameof(ToggleConsole));
 		game.Changed += OnGameChanged;
 		Render();
 	}
@@ -133,8 +141,8 @@ public class Main : Node2D
 			enemyFlash = Mathf.Max(0, enemyFlash - delta);
 		}
 		game.Tick((decimal)delta);
-        // Input intent only; GameSession checks cooldown, resources and combat state.
-        if (punchTouchHeld || punchKeyHeld) game.Punch();
+		// Input intent only; GameSession checks cooldown, resources and combat state.
+		if (punchTouchHeld || punchKeyHeld) game.Punch();
 		if (!game.Paused) scroll = Mathf.Lerp(scroll, targetScroll, Mathf.Min(1, delta * 12));
 		float width = panorama.MotionMirroring.x;
 		if (width > 0 && scroll >= width) { scroll -= width; targetScroll -= width; }
@@ -196,7 +204,7 @@ public class Main : Node2D
 					enemy.Play("hurt");
 					enemy.Frame = 0;
 				}
-				break;
+				return;
 			case GameEventKind.EnemyAttacked:
 				if (enemyHurt <= 0) { enemy.Play("attack"); enemy.Frame = 0; }
 				enemyPose = AnimationDuration(enemy, "attack", 0.25f);
@@ -214,12 +222,14 @@ public class Main : Node2D
 			case GameEventKind.GameOver:
 				message = "Вы проиграли. Нажмите R для новой игры.";
 				break;
+			default: return;
 		}
+		if (Godot.Object.IsInstanceValid(console)) console.AppendMessage(message);
 	}
 
 	public void Punch() { game.Punch(); Render(); }
-    public void PressPunch() { punchTouchHeld = true; Punch(); }
-    public void ReleasePunch() { punchTouchHeld = false; }
+	public void PressPunch() { punchTouchHeld = true; Punch(); }
+	public void ReleasePunch() { punchTouchHeld = false; }
 	public void Shoot() { game.Shoot(); Render(); }
 	public void Dodge() { game.Dodge(); Render(); }
 	public void Block() { blockTouchHeld = true; UpdateBlock(); }
@@ -228,12 +238,16 @@ public class Main : Node2D
 	public void ToggleInventory() { game.SetInventoryOpen(!game.InventoryOpen); Render(); }
 	public void OnInventoryClosed() { game.SetInventoryOpen(false); Render(); }
 	public void UseKit() { game.UseKit(); Render(); }
+	public void ToggleConsole()
+	{
+		if (Godot.Object.IsInstanceValid(console)) console.Visible = !console.Visible;
+	}
 
 	public override void _Input(InputEvent inputEvent)
 	{
 		// Receive release even if a Control consumes the key event.
-        if (inputEvent is InputEventKey punchKey && punchKey.Scancode == (uint)KeyList.Slash && !punchKey.Pressed)
-            punchKeyHeld = false;
+		if (inputEvent is InputEventKey punchKey && punchKey.Scancode == (uint)KeyList.Slash && !punchKey.Pressed)
+			punchKeyHeld = false;
 		if (inputEvent is InputEventKey key && key.Scancode == (uint)KeyList.Z && !key.Pressed)
 		{
 			blockKeyHeld = false;

@@ -1,4 +1,4 @@
-[gd_scene load_steps=23 format=2]
+[gd_scene load_steps=24 format=2]
 
 [ext_resource path="res://Scripts/Main.cs" type="Script" id=1]
 [ext_resource path="res://Assets/Fonts/NotoSans-Regular.ttf" type="DynamicFontData" id=2]
@@ -16,6 +16,7 @@
 [ext_resource path="res://Assets/UI/icon_health.png" type="Texture" id=14]
 [ext_resource path="res://Scenes/Inventory.tscn" type="PackedScene" id=15]
 [ext_resource path="res://Scenes/RageIndicator.tscn" type="PackedScene" id=16]
+[ext_resource path="res://Scenes/Console.tscn" type="PackedScene" id=17]
 
 [sub_resource type="DynamicFont" id=1]
 font_data = ExtResource( 2 )
@@ -45,6 +46,8 @@ ShootButtonPath = NodePath("UI/HUD/Node2D/ShootButton")
 DodgeButtonPath = NodePath("UI/HUD/Node2D/DodgeButton")
 BlockButtonPath = NodePath("UI/HUD/Node2D/BlockButton")
 InventoryButtonPath = NodePath("UI/HUD/Node2D/InventoryButton2")
+SettingsButtonPath = NodePath("UI/HUD/SettingsIcon")
+ConsoleScreenPath = NodePath("UI/HUD/Console")
 HealthLabelPath = NodePath("UI/HUD/HealthLabel")
 RageLabelPath = NodePath("UI/HUD/RageLabel")
 StaminaLabelPath = NodePath("UI/HUD/StaminaLabel")
@@ -127,13 +130,10 @@ margin_bottom = 48.0
 texture = ExtResource( 13 )
 stretch_mode = 3
 
-[node name="SettingsIcon" type="TextureRect" parent="UI/HUD"]
-margin_left = 905.0
-margin_top = 22.0
-margin_right = 933.0
-margin_bottom = 49.0
-texture = ExtResource( 12 )
-stretch_mode = 3
+[node name="SettingsIcon" type="TouchScreenButton" parent="UI/HUD"]
+position = Vector2( 905, 22 )
+normal = ExtResource( 12 )
+shape_visible = false
 
 [node name="HealthLabel" type="Label" parent="UI/HUD"]
 margin_left = 645.0
@@ -262,3 +262,9 @@ normal = ExtResource( 5 )
 shape_centered = false
 shape_visible = false
 script = ExtResource( 8 )
+
+[node name="Console" parent="UI/HUD" instance=ExtResource( 17 )]
+margin_left = 24.0
+margin_top = 110.0
+margin_right = 936.0
+margin_bottom = 350.0
