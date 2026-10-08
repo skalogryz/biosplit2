@@ -60,4 +60,28 @@ GameSettings.Weapons — Lookup по имени секции INI (регистр
     hero.Inventory.Weapon1 = new WeaponItem(settings.Weapons["knife"]);
     hero.Inventory.Weapon2 = new WeaponItem(settings.Weapons["handgun"], ammo: 12);
 
-Текущий персонаж доступен через GameSession.Player. Его стартовые предметы — knife и handgun; определения берутся из копии Lookup, принадлежащей сессии. Другие персонажи имеют отдельные инвентари; единого инвентаря на GameSession нет. Назначение слотов пока не меняет существующие команды Punch/Shoot.
+Текущий персонаж доступен через GameSession.Player. Его стартовые предметы — knife и handgun; определения берутся из копии Lookup, принадлежащей сессии. Другие персонажи имеют отдельные инвентари; единого инвентаря на GameSession нет. Punch/Shoot используют Weapon1/Weapon2 и общий API StartAttack.
+
+## Жизненный цикл атаки
+
+StartAttack(WeaponItem) возвращает AttackResult.Success, если атака принята. CanStartAttack(item) проверяет состояние, кулдаун, ресурсы и тип; None и null недопустимы. Одновременно возможна одна атака. Melee недоступен во время отскока; Firearm доступен. Тип оружия определяет анимационное событие Punch/Shot и остановку регенерации выносливости на время кулдауна Melee. Ammo по-прежнему не учитывается.
+
+Стоимость ярости и выносливости списывается один раз при старте. Кулдаун назначается экземпляру WeaponItem после завершения атаки, а не при старте. Урон и RageBonus берутся из снимка определения WeaponItem и применяются один раз при завершении; изменение Definition во время атаки не меняет её результат.
+
+WeaponSettings.AttackDurationMs (INI: attackduration, миллисекунды) задаёт задержку до урона. По умолчанию 0: атака начинается и завершается в StartAttack. Для длительной атаки время движется через Tick; инвентарь приостанавливает его. AttackRemaining, ActiveWeapon и IsAttacking позволяют отслеживать состояние.
+
+CancelAttack() возвращает true только если была активная атака. Отменённая атака не нанесёт урон и не даст бонус; уже списанные ресурсы не возвращаются; отмена также назначает кулдаун предмету. Повторная или поздняя отмена возвращает false без новых событий. Блок, поражение и отскок для Melee отменяют незавершённую атаку.
+
+События: AttackStarted, AttackCancelled, AttackCompleted. В GameEvent.Weapon передаётся предмет; AttackCompleted.Damage содержит фактически нанесённый урон. У завершённой атаки не возникает AttackCancelled, у отменённой — AttackCompleted. Существующие Punch/Shot и события урона сохранены для UI.
+
+## Кулдауны предметов и причины отказа
+
+WeaponItem.Cooldown — оставшийся кулдаун decimal в секундах. Продолжительность по-прежнему берётся из WeaponSettings.CooldownMs (INI cooldown, миллисекунды). Два предмета одного определения имеют независимые кулдауны. При завершении или отмене атаки кулдаун назначается только использованному предмету. WeaponOnCooldown запрещает его запуск; другое готовое оружие доступно, если активной атаки нет.
+
+GameSession.Characters содержит зарегистрированных персонажей, включая Player; AddCharacter(character) добавляет другого персонажа. Tick уменьшает кулдаун всех предметов из обоих слотов всех этих персонажей, с ограничением снизу 0. Один и тот же предмет, указанный в нескольких слотах, обновляется один раз. Предмет вне инвентарей не получает обновления кулдауна. Инвентарь и поражение по-прежнему приостанавливают игровое время. Выносливость игрока не растёт, пока хотя бы одно из носимых им Melee-оружий находится на кулдауне.
+
+AttackResult: Success, NoWeapon, UnsupportedWeaponType, GameOver, InventoryOpen, Blocking, NoEnemy, AttackInProgress, WeaponOnCooldown, Dodging, InsufficientRage, InsufficientStamina. При нескольких причинах возвращается первая по порядку проверки. GetAttackStartResult(item) позволяет получить причину без запуска и без расхода ресурсов; CanStartAttack(item) — булева проверка. Punch/Shoot сохраняют возврат bool для совместимости с UI.
+
+    AttackResult result = game.StartAttack(game.Player.Inventory.Weapon1);
+    if (result == AttackResult.WeaponOnCooldown)
+        Console.WriteLine("Оружие ещё не готово");

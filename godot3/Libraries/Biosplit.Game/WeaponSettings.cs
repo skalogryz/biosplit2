@@ -10,6 +10,7 @@ namespace Biosplit.Game
         public int RageCost { get; set; }
         public decimal StaminaCost { get; set; }
         public int CooldownMs { get; set; }
+        public int AttackDurationMs { get; set; }
         internal WeaponSettings Copy() => (WeaponSettings)MemberwiseClone();
     }
 }

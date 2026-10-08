@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using Biosplit.Game;
@@ -44,8 +45,8 @@ internal static class Program
         g.Tick(0.259m); Check(!g.Punch(), "Cooldown before boundary");
         g.Tick(0.001m); Check(g.Punch(), "Cooldown expires at 260 milliseconds");
         g.Tick(0.26m); g.Punch(); g.Tick(0.26m); g.Shoot();
-        g.Tick(0.549m); Check(!g.Punch(), "Shared handgun cooldown");
-        g.Tick(0.001m); Check(g.Punch(), "Handgun cooldown expires at 550 milliseconds");
+        g.Tick(0.549m); Check(g.Punch(), "Handgun cooldown does not block knife");
+        g.Tick(0.001m); Check(g.Player.Inventory.Weapon2.Cooldown == 0m, "Handgun cooldown expires at 550 milliseconds");
     }
 
     private static void KnifeCooldownStamina()
@@ -58,10 +59,10 @@ internal static class Program
         game.Tick(1.5m);
         Check(game.Punch() && game.Stamina == 0m, "Knife consumes accumulated stamina");
         game.Tick(0.259m);
-        Check(game.Stamina == 0m && game.CooldownRemaining == 0.001m, "Knife cooldown prevents stamina growth");
+        Check(game.Stamina == 0m && game.Player.Inventory.Weapon1.Cooldown == 0.001m, "Knife cooldown prevents stamina growth");
         Check(!game.Punch(), "Rejected knife does not restart cooldown");
         game.Tick(0.001m);
-        Check(game.Stamina == 0m && game.CooldownRemaining == 0m, "No regeneration exactly at cooldown boundary");
+        Check(game.Stamina == 0m && game.Player.Inventory.Weapon1.Cooldown == 0m, "No regeneration exactly at cooldown boundary");
         game.Tick(0.1m);
         Check(game.Stamina == 0.2m, "Stamina resumes after knife cooldown");
 
@@ -69,11 +70,11 @@ internal static class Program
         Check(game.Stamina == 0.2m, "Large update regenerates only time after knife cooldown");
 
         game.Tick(1.4m); game.Punch(); game.SetInventoryOpen(true); game.Tick(5m);
-        Check(game.Stamina == 0m && game.CooldownRemaining == 0.26m, "Inventory pauses knife cooldown and regeneration");
+        Check(game.Stamina == 0m && game.Player.Inventory.Weapon1.Cooldown == 0.26m, "Inventory pauses knife cooldown and regeneration");
         game.SetInventoryOpen(false); game.Tick(0.26m);
         Check(game.Stamina == 0m && game.Shoot(), "Shot can follow knife cooldown");
         game.Tick(0.1m);
-        Check(game.Stamina == 0.2m && game.CooldownRemaining == 0.45m, "Handgun cooldown allows stamina growth");
+        Check(game.Stamina == 0.2m && game.Player.Inventory.Weapon2.Cooldown == 0.45m, "Handgun cooldown allows stamina growth");
 
         settings.PunchCooldownMs = 0;
         game = new GameSession(settings); game.Tick(1.5m); game.Punch(); game.Tick(0.1m);
@@ -113,6 +114,141 @@ internal static class Program
         for (int i = 0; i < 3; i++) { game.Tick(1.5m); game.Punch(); }
         Check(game.Player.Inventory.Weapon2.Ammo == 0 && game.Shoot() &&
             game.Player.Inventory.Weapon2.Ammo == 0, "Ammo is not required or consumed by firing yet");
+    }
+
+    private static void AttackLifecycle()
+    {
+        var s = Quiet();
+        s.PunchStaminaCost = 0;
+        var g = new GameSession(s);
+        var events = new List<GameEvent>();
+        g.Changed += (_, e) => events.Add(e);
+        var item = new WeaponItem(new WeaponSettings("axe")
+        {
+            Type = WeaponType.Melee, Damage = 19, RageBonus = 7,
+            StaminaCost = 1m, CooldownMs = 260, AttackDurationMs = 1000
+        }, 20);
+        g.Tick(2m);
+        Check(g.StartAttack(item) == AttackResult.Success && g.IsAttacking && ReferenceEquals(g.ActiveWeapon, item), "StartAttack accepts a concrete item");
+        Check(g.Stamina == 3m && g.EnemyHealth == 10000 && g.Rage == 0, "Delayed attack pays cost at start, postpones damage and bonus");
+        Check(events.FindAll(e => e.Kind == GameEventKind.AttackStarted).Count == 1 &&
+            ReferenceEquals(events[0].Weapon, item), "AttackStarted includes item");
+        Check(g.StartAttack(item) == AttackResult.AttackInProgress, "Cannot overlap attacks");
+        item.Definition.Damage = 999;
+        g.Tick(0.999m);
+        Check(g.IsAttacking && g.EnemyHealth == 10000, "Attack waits until duration boundary");
+        g.Tick(0.001m);
+        Check(!g.IsAttacking && g.EnemyHealth == 9981 && g.Rage == 7 && item.Ammo == 20, "Completion uses captured damage and bonus, leaves ammo unchanged");
+        var complete = events.Find(e => e.Kind == GameEventKind.AttackCompleted);
+        Check(complete != null && complete.Damage == 19 && ReferenceEquals(complete.Weapon, item), "AttackCompleted includes item and actual damage");
+        Check(!g.CancelAttack(), "Late cancellation safely does nothing");
+        g.Tick(2m);
+        Check(events.FindAll(e => e.Kind == GameEventKind.AttackCompleted).Count == 1 &&
+            events.FindAll(e => e.Kind == GameEventKind.AttackCancelled).Count == 0, "Completed attack never finishes or cancels twice");
+
+        item = new WeaponItem(item.Definition, item.Ammo);
+        g = new GameSession(s); events.Clear(); g.Changed += (_, e) => events.Add(e);
+        g.Player.Inventory.Weapon1 = item; g.Tick(2m); g.StartAttack(item); g.Tick(0.1m);
+        Check(g.CancelAttack() && !g.IsAttacking && g.Stamina == 3.2m, "Cancel stops attack without refund");
+        g.Tick(2m);
+        Check(g.EnemyHealth == 10000 && g.Rage == 0 &&
+            events.FindAll(e => e.Kind == GameEventKind.AttackCancelled).Count == 1 &&
+            events.FindAll(e => e.Kind == GameEventKind.AttackCompleted).Count == 0, "Cancelled attack never deals damage or grants bonus");
+        Check(!g.CancelAttack(), "Repeated cancellation does not emit another event");
+
+        item = new WeaponItem(new WeaponSettings("rifle")
+        {
+            Type = WeaponType.Firearm, Damage = 23, RageBonus = 4, RageCost = 10, StaminaCost = 1.25m
+        });
+        g = new GameSession(s); g.Tick(1m); g.Punch();
+        Check(g.StartAttack(item) == AttackResult.Success && g.Rage == 4 && g.EnemyHealth == 9976 && g.Stamina == 0.75m, "Generic firearm computes own damage, both costs and bonus");
+        Check(!g.IsAttacking && !g.CancelAttack(), "Zero duration completes immediately");
+        Check(g.StartAttack(null) == AttackResult.NoWeapon && g.StartAttack(new WeaponItem(new WeaponSettings("none"))) == AttackResult.UnsupportedWeaponType, "Null and None weapons are rejected");
+
+        g = new GameSession(s); g.Tick(5m);
+        item = new WeaponItem(new WeaponSettings("charge") { Type = WeaponType.Melee, Damage = 12, AttackDurationMs = 1000 });
+        g.StartAttack(item); g.SetInventoryOpen(true); g.Tick(5m);
+        Check(g.IsAttacking && g.AttackRemaining == 1m, "Inventory pauses active attack");
+        g.SetInventoryOpen(false); g.SetBlocking(true);
+        Check(!g.IsAttacking && g.EnemyHealth == 10000, "Block cancels pending attack");
+        g.SetBlocking(false); g.StartAttack(item);
+        Check(g.Dodge() && !g.IsAttacking, "Dodge cancels pending melee attack");
+
+        s.MaxHealth = 10; s.EnemyDamage = 10; s.EnemyAttackInterval = 0.1m;
+        g = new GameSession(s); g.StartAttack(item); g.Tick(0.1m);
+        Check(g.GameOver && !g.IsAttacking, "Death cancels pending attack");
+        g = new GameSession(Quiet());
+        g.Changed += (_, e) => { if (e.Kind == GameEventKind.AttackStarted) g.CancelAttack(); };
+        Check(g.StartAttack(item) == AttackResult.Success && !g.IsAttacking && g.EnemyHealth == 10000, "Cancellation inside start event prevents completion");
+    }
+
+    private static void ItemCooldownsAndAttackResults()
+    {
+        var settings = Quiet();
+        var game = new GameSession(settings);
+        var knife = game.Player.Inventory.Weapon1;
+        var gun = game.Player.Inventory.Weapon2;
+        Check(game.StartAttack(null) == AttackResult.NoWeapon, "NoWeapon result");
+        Check(game.StartAttack(new WeaponItem(new WeaponSettings("none"))) == AttackResult.UnsupportedWeaponType, "UnsupportedWeaponType result");
+        Check(game.StartAttack(knife) == AttackResult.InsufficientStamina, "InsufficientStamina result");
+        Check(game.StartAttack(gun) == AttackResult.InsufficientRage, "InsufficientRage result");
+        game.SetInventoryOpen(true);
+        Check(game.StartAttack(knife) == AttackResult.InventoryOpen, "InventoryOpen result");
+        game.SetInventoryOpen(false); game.SetBlocking(true);
+        Check(game.StartAttack(knife) == AttackResult.Blocking, "Blocking result");
+        game.SetBlocking(false); game.Tick(5m); game.Dodge();
+        Check(game.StartAttack(knife) == AttackResult.Dodging, "Dodging result");
+        game.Tick(3m);
+
+        var definition = new WeaponSettings("delayed")
+            { Type = WeaponType.Firearm, Damage = 1, CooldownMs = 500, AttackDurationMs = 1000 };
+        var delayed = new WeaponItem(definition);
+        game.Player.Inventory.Weapon2 = delayed;
+        Check(game.StartAttack(delayed) == AttackResult.Success && delayed.Cooldown == 0m, "No cooldown while attack is active");
+        Check(game.StartAttack(knife) == AttackResult.AttackInProgress, "AttackInProgress result");
+        game.Tick(0.999m);
+        Check(delayed.Cooldown == 0m && game.IsAttacking, "Cooldown has not started before completion");
+        game.Tick(0.001m);
+        Check(delayed.Cooldown == 0.5m && !game.IsAttacking, "Cooldown assigned at completion");
+        Check(game.StartAttack(delayed) == AttackResult.WeaponOnCooldown, "WeaponOnCooldown result");
+        Check(game.StartAttack(knife) == AttackResult.Success, "Another item can attack while first item cools down");
+        game.Tick(0.499m);
+        Check(delayed.Cooldown == 0.001m, "Item cooldown exact remaining time");
+        game.Tick(0.001m);
+        Check(delayed.Cooldown == 0m && game.CanStartAttack(delayed), "Item cooldown expires at exact boundary");
+        game.StartAttack(delayed); game.Tick(1.2m);
+        Check(delayed.Cooldown == 0.3m, "Update spanning completion reduces cooldown only after completion");
+        game.SetInventoryOpen(true); game.Tick(5m);
+        Check(delayed.Cooldown == 0.3m, "Inventory pauses item cooldown");
+        game.SetInventoryOpen(false); game.Tick(0.3m);
+        game.StartAttack(delayed); game.Tick(0.1m); game.CancelAttack();
+        Check(delayed.Cooldown == 0.5m, "Cancelled attack starts item cooldown");
+
+        definition = new WeaponSettings("same") { Type = WeaponType.Firearm, Damage = 1, CooldownMs = 600 };
+        var first = new WeaponItem(definition);
+        var second = new WeaponItem(definition);
+        game = new GameSession(Quiet());
+        game.Player.Inventory.Weapon1 = first;
+        game.Player.Inventory.Weapon2 = second;
+        Check(game.StartAttack(first) == AttackResult.Success && first.Cooldown == 0.6m && second.Cooldown == 0m, "Cooldown belongs to item, not shared definition");
+        Check(game.StartAttack(second) == AttackResult.Success, "Second instance of same weapon attacks independently");
+        var other = new Character("other");
+        var third = new WeaponItem(definition);
+        other.Inventory.Weapon1 = third;
+        other.Inventory.Weapon2 = third;
+        game.AddCharacter(other); game.AddCharacter(other);
+        game.StartAttack(third); game.Tick(0.2m);
+        Check(game.Characters.Count == 2 && first.Cooldown == 0.4m && second.Cooldown == 0.4m && third.Cooldown == 0.4m,
+            "Tick updates every character and counts shared slot references once");
+        game.Tick(10m);
+        Check(first.Cooldown == 0m && second.Cooldown == 0m && third.Cooldown == 0m, "Large delta clamps all cooldowns at zero");
+
+        settings = Quiet(); settings.EnemyHealth = 1; settings.PunchStaminaCost = 0;
+        game = new GameSession(settings); game.Punch();
+        Check(game.StartAttack(game.Player.Inventory.Weapon1) == AttackResult.NoEnemy, "NoEnemy result");
+        settings.MaxHealth = 1; settings.EnemyHealth = 10000; settings.EnemyDamage = 1; settings.EnemyAttackInterval = 0.1m;
+        game = new GameSession(settings); game.Tick(0.1m);
+        Check(game.StartAttack(game.Player.Inventory.Weapon1) == AttackResult.GameOver, "GameOver result");
     }
 
     private static void Defense()
@@ -203,18 +339,20 @@ internal static class Program
             Check(s.PunchWeaponType == WeaponType.None && s.ShotWeaponType == WeaponType.None, "Unknown and none type map to None");
             File.WriteAllText(Path.Combine(directory, "cfg", "weapon.ini"),
                 "ignored=1\n[Axe]\ntype=melee\ndamage=27\nragebonus=2\nrage=3\nstamina=1.25\ncooldown=450\n" +
-                "[AXE]\ndamage=29\n[laser]\ntype=gun\ndamage=80\n[empty]\n");
+                "[AXE]\ndamage=29\n[laser]\ntype=gun\ndamage=80\nattackduration=1250\n[empty]\n");
             GameConfiguration.Load(directory, s);
             Check(s.Weapons.Count == 5, "All named sections loaded, repeated sections merged, unnamed values skipped");
             Check(s.Weapons.TryGetValue("aXe", out var axe) && axe.Name == "Axe" && axe.Type == WeaponType.Melee && axe.Damage == 29, "Weapon lookup is case insensitive");
             Check(axe.RageBonus == 2 && axe.RageCost == 3 && axe.StaminaCost == 1.25m && axe.CooldownMs == 450, "Additional weapons load all parameters");
             Check(s.Weapons["laser"].Type == WeaponType.Firearm && s.Weapons["laser"].StaminaCost == 0m, "Additional firearm defaults");
+            Check(s.Weapons["laser"].AttackDurationMs == 1250, "INI attack duration is milliseconds");
             Check(s.Weapons["empty"].Type == WeaponType.None && !s.Weapons.TryGetValue("missing", out _), "Empty section and missing weapon lookup");
             s.PunchDamage = 7;
             Check(s.Weapons["KNIFE"].Damage == 7, "Legacy setters update lookup");
             s.Weapons["knife"].Damage = 8;
             Check(s.PunchDamage == 8, "Lookup updates legacy getters");
             s.PunchStaminaCost = 0m;
+            s.PunchWeaponType = WeaponType.Melee;
             var snapshot = new GameSession(s);
             s.Weapons["knife"].Damage = 99;
             Check(snapshot.Punch() && snapshot.EnemyHealth == 112, "Session deep copies weapon definitions");
@@ -240,7 +378,7 @@ internal static class Program
     {
         try
         {
-            Weapons(); KnifeCooldownStamina(); CharacterInventories(); Defense(); InventoryAndRespawn(); ConfigurationAndBounds();
+            Weapons(); KnifeCooldownStamina(); CharacterInventories(); AttackLifecycle(); ItemCooldownsAndAttackResults(); Defense(); InventoryAndRespawn(); ConfigurationAndBounds();
             Console.WriteLine("PASS: " + checks + " checks without Godot");
             return 0;
         }

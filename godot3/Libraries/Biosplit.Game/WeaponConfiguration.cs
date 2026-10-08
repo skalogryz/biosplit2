@@ -35,6 +35,8 @@ namespace Biosplit.Game
                     if (stamina >= 0m) weapon.StaminaCost = stamina;
                     int cooldown = ini.GetInt(section, "cooldown", weapon.CooldownMs);
                     if (cooldown >= 0) weapon.CooldownMs = cooldown;
+                    int attackDuration = ini.GetInt(section, "attackduration", weapon.AttackDurationMs);
+                    if (attackDuration >= 0) weapon.AttackDurationMs = attackDuration;
                     game.RegisterWeapon(weapon);
                 }
             }

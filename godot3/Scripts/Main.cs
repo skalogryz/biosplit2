@@ -177,13 +177,13 @@ public class Main : Node2D
 			case GameEventKind.Punch:
 				targetScroll += Mathf.Max(0, ScrollPerPunch);
 				StartPlayerAnimation("attack");
-				pose = AnimationDuration(player, "attack", 0.20f);
-				message = "Удар! +" + game.RagePerPunch + " ярости.";
+				pose = Mathf.Max(AnimationDuration(player, "attack", 0.20f), (float)game.AttackRemaining);
+				message = "Удар! +" + Math.Max(0, action.Weapon?.Definition.RageBonus ?? 0) + " ярости.";
 				break;
 			case GameEventKind.Shot:
 				StartPlayerAnimation("shoot");
-				pose = AnimationDuration(player, "shoot", 0.23f);
-				message = "Выстрел! −" + game.ShotCost + " ярости.";
+				pose = Mathf.Max(AnimationDuration(player, "shoot", 0.23f), (float)game.AttackRemaining);
+				message = "Выстрел! −" + Math.Max(0, action.Weapon?.Definition.RageCost ?? 0) + " ярости.";
 				break;
 			case GameEventKind.Dodge:
 				pose = flash = 0;
@@ -219,7 +219,11 @@ public class Main : Node2D
 				enemy.Frame = 0;
 				message = "Новый противник!";
 				break;
-			case GameEventKind.GameOver:
+			case GameEventKind.AttackCancelled:
+                pose = 0;
+                message = "Атака отменена.";
+                break;
+            case GameEventKind.GameOver:
 				message = "Вы проиграли. Нажмите R для новой игры.";
 				break;
 			default: return;
