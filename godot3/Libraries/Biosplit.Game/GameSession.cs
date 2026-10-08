@@ -123,7 +123,7 @@ namespace Biosplit.Game
             int damage = dodged || blocked ? 0 : settings.EnemyDamage;
             Health = Math.Max(0, Health - damage);
             Emit(GameEventKind.EnemyAttacked, damage, blocked, dodged);
-            if (GameOver) { CancelAttack(); Emit(GameEventKind.GameOver); }
+            if (GameOver) { CancelAttack(isInterrupt: true); Emit(GameEventKind.GameOver); }
         }
 
         public bool Punch() => StartAttack(Player.Inventory.Weapon1) == AttackResult.Success;
@@ -151,13 +151,20 @@ namespace Biosplit.Game
             return AttackResult.Success;
         }
 
-        // Request cancellation of the sequence; the current strike always finishes.
-        public bool CancelAttack()
+        // Soft cancellation finishes the current strike; interruption stops it immediately.
+        public bool CancelAttack(bool isInterrupt = false)
         {
             var attack = activeAttack;
-            if (attack == null || attack.CancellationRequested) return false;
+            if (attack == null || (!isInterrupt && attack.CancellationRequested)) return false;
             attack.CancellationRequested = true;
+            if (isInterrupt)
+            {
+                activeAttack = null;
+                attack.Item.CurrentStrikeIndex = -1;
+                attack.Item.BeginCooldown(attack.Definition.CooldownMs);
+            }
             Emit(GameEventKind.AttackCancelled, weapon: attack.Item);
+            if (isInterrupt) Emit(GameEventKind.AttackCompleted, attack.DamageDealt, weapon: attack.Item);
             return true;
         }
         private void CompleteAttack(Attack attack)
