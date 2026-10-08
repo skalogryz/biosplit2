@@ -57,6 +57,7 @@ public class Main : Node2D
 	// Presentation timers only. Combat timing belongs to GameSession.
 	private float scroll, targetScroll, pose, enemyPose, flash, enemyFlash, enemyHurt;
 	private bool blockTouchHeld, blockKeyHeld, punchTouchHeld, punchKeyHeld;
+    private WeaponItem meleeAttackWeapon;
 	private string message = "Ударьте врага, чтобы накопить ярость.";
 
 	public override void _Ready()
@@ -133,8 +134,6 @@ public class Main : Node2D
 			enemyFlash = Mathf.Max(0, enemyFlash - delta);
 		}
 		game.Tick((decimal)delta);
-		// Input intent only; GameSession checks cooldown, resources and combat state.
-		if (punchTouchHeld || punchKeyHeld) TryMeleeAttack();
 		if (!game.Paused) scroll = Mathf.Lerp(scroll, targetScroll, Mathf.Min(1, delta * 12));
 		float width = panorama.MotionMirroring.x;
 		if (width > 0 && scroll >= width) { scroll -= width; targetScroll -= width; }
@@ -164,7 +163,9 @@ public class Main : Node2D
 
 	private void OnGameChanged(object sender, GameEvent action)
 	{
-		switch (action.Kind)
+		if (action.Kind == GameEventKind.AttackCompleted && action.Weapon == meleeAttackWeapon)
+            meleeAttackWeapon = null;
+        switch (action.Kind)
 		{
 			case GameEventKind.Punch:
 				targetScroll += Mathf.Max(0, ScrollPerPunch);
@@ -214,7 +215,8 @@ public class Main : Node2D
 				message = "Новый противник!";
 				break;
 			case GameEventKind.AttackCancelled:
-				message = "Атака отменена: текущий удар будет завершён.";
+				if (!game.IsAttacking) pose = 0;
+                message = game.IsAttacking ? "Атака отменена: текущий удар будет завершён." : "Атака прервана.";
 				break;
 			case GameEventKind.GameOver:
 				message = "Вы проиграли. Нажмите R для новой игры.";
@@ -237,12 +239,25 @@ public class Main : Node2D
 	private void TryMeleeAttack()
 	{
 		var weapon = FindReadyWeapon(WeaponType.Melee);
-		if (weapon != null) game.StartAttack(weapon);
+		if (weapon == null) return;
+		meleeAttackWeapon = weapon;
+		if (game.StartAttack(weapon) != AttackResult.Success) meleeAttackWeapon = null;
 	}
 
 	public void Punch() { TryMeleeAttack(); Render(); }
 	public void PressPunch() { punchTouchHeld = true; Punch(); }
-	public void ReleasePunch() { punchTouchHeld = false; }
+	public void ReleasePunch()
+	{
+		punchTouchHeld = false;
+		CancelReleasedMeleeAttack();
+	}
+
+	private void CancelReleasedMeleeAttack()
+	{
+		if (punchTouchHeld || punchKeyHeld) return;
+		if (meleeAttackWeapon != null && game.ActiveWeapon == meleeAttackWeapon) game.CancelAttack(isInterrupt: false);
+		Render();
+	}
 	public void Shoot()
 	{
 		var weapon = FindReadyWeapon(WeaponType.Firearm);
@@ -265,7 +280,10 @@ public class Main : Node2D
 	{
 		// Receive release even if a Control consumes the key event.
 		if (inputEvent is InputEventKey punchKey && punchKey.Scancode == (uint)KeyList.Slash && !punchKey.Pressed)
+		{
 			punchKeyHeld = false;
+			CancelReleasedMeleeAttack();
+		}
 		if (inputEvent is InputEventKey key && key.Scancode == (uint)KeyList.Z && !key.Pressed)
 		{
 			blockKeyHeld = false;
