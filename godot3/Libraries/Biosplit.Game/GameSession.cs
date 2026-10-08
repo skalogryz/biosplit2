@@ -79,7 +79,6 @@ namespace Biosplit.Game
             var definition = weapon.Definition;
             if (definition.Type != WeaponType.Melee && definition.Type != WeaponType.Firearm)
                 return AttackResult.UnsupportedWeaponType;
-            if (definition.Striker == null || definition.Striker.Length == 0) return AttackResult.NoStrikes;
             if (GameOver) return AttackResult.GameOver;
             if (InventoryOpen) return AttackResult.InventoryOpen;
             if (Blocking) return AttackResult.Blocking;
@@ -169,18 +168,17 @@ namespace Biosplit.Game
             attack.Item.BeginCooldown(attack.Definition.CooldownMs);
             Emit(GameEventKind.AttackCompleted, attack.DamageDealt, weapon: attack.Item);
         }
-        private static decimal StrikeDuration(WeaponSettings weapon, StrikeSettings strike)
+        private static decimal StrikeDuration(StrikeSettings strike)
         {
             decimal total = (decimal)Math.Max(0, strike.WindupMs) + Math.Max(0, strike.DamageDurationMs) + Math.Max(0, strike.RecoveryMs);
-            return (total > 0m ? total : Math.Max(0, weapon.AttackDurationMs)) / 1000m;
+            return total / 1000m;
         }
 
         private void BeginStrike(Attack attack)
         {
             var strike = attack.Definition.Striker[attack.Item.CurrentStrikeIndex];
-            attack.Remaining = StrikeDuration(attack.Definition, strike);
-            attack.UntilDamage = strike.WindupMs <= 0 && strike.DamageDurationMs <= 0 && strike.RecoveryMs <= 0
-                ? Math.Max(0, attack.Definition.AttackDurationMs) / 1000m : Math.Max(0, strike.WindupMs) / 1000m;
+            attack.Remaining = StrikeDuration(strike);
+            attack.UntilDamage = Math.Max(0, strike.WindupMs) / 1000m;
             attack.DamageApplied = false;
             Emit(attack.Definition.Type == WeaponType.Melee ? GameEventKind.Punch : GameEventKind.Shot, weapon: attack.Item);
         }
