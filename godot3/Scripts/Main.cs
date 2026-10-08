@@ -12,15 +12,6 @@ public class Main : Node2D
 	internal decimal Stamina => game?.Stamina ?? 0m;
 	internal decimal DodgeStamina { get; set; } = 10m;
 	[Export] public int DodgeTimeMs = 3000;
-	[Export] public int RagePerPunch = 10;
-	[Export] public int ShotCost = 30;
-	[Export] public int PunchCost = 0;
-	internal decimal PunchStaminaCost { get; set; } = 3m;
-	internal decimal ShotStaminaCost { get; set; } = 0m;
-	[Export] public int PunchDamage = 12;
-	[Export] public int ShotDamage = 40;
-	[Export] public int PunchCooldownMs = 260;
-	[Export] public int ShotCooldownMs = 550;
 	[Export] public float ScrollPerPunch = 32;
 	[Export] public int EnemyDamage = 15;
 	[Export] public int EnemyHealth = 80;
@@ -220,10 +211,10 @@ public class Main : Node2D
 				message = "Новый противник!";
 				break;
 			case GameEventKind.AttackCancelled:
-                pose = 0;
-                message = "Атака отменена.";
-                break;
-            case GameEventKind.GameOver:
+				pose = 0;
+				message = "Атака отменена.";
+				break;
+			case GameEventKind.GameOver:
 				message = "Вы проиграли. Нажмите R для новой игры.";
 				break;
 			default: return;
@@ -366,15 +357,6 @@ public class Main : Node2D
 		StaminaGrow = StaminaGrow,
 		DodgeStamina = DodgeStamina,
 		DodgeTimeMs = DodgeTimeMs,
-		RagePerPunch = RagePerPunch,
-		PunchCost = PunchCost,
-		ShotCost = ShotCost,
-		PunchStaminaCost = PunchStaminaCost,
-		ShotStaminaCost = ShotStaminaCost,
-		PunchDamage = PunchDamage,
-		ShotDamage = ShotDamage,
-		PunchCooldownMs = PunchCooldownMs,
-		ShotCooldownMs = ShotCooldownMs,
 		EnemyDamage = EnemyDamage,
 		EnemyHealth = EnemyHealth,
 		EnemyAttackInterval = (decimal)EnemyAttackInterval,
@@ -389,15 +371,6 @@ public class Main : Node2D
 		StaminaGrow = settings.StaminaGrow;
 		DodgeStamina = settings.DodgeStamina;
 		DodgeTimeMs = settings.DodgeTimeMs;
-		RagePerPunch = settings.RagePerPunch;
-		PunchCost = settings.PunchCost;
-		ShotCost = settings.ShotCost;
-		PunchStaminaCost = settings.PunchStaminaCost;
-		ShotStaminaCost = settings.ShotStaminaCost;
-		PunchDamage = settings.PunchDamage;
-		ShotDamage = settings.ShotDamage;
-		PunchCooldownMs = settings.PunchCooldownMs;
-		ShotCooldownMs = settings.ShotCooldownMs;
 		EnemyDamage = settings.EnemyDamage;
 		EnemyHealth = settings.EnemyHealth;
 		EnemyAttackInterval = (float)settings.EnemyAttackInterval;
