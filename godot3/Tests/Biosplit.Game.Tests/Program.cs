@@ -166,6 +166,26 @@ internal static class Program
             File.WriteAllText(Path.Combine(directory, "cfg", "weapon.ini"), "[knife]\ntype=unknown\n[handgun]\ntype=none\n");
             GameConfiguration.Load(directory, s);
             Check(s.PunchWeaponType == WeaponType.None && s.ShotWeaponType == WeaponType.None, "Unknown and none type map to None");
+            File.WriteAllText(Path.Combine(directory, "cfg", "weapon.ini"),
+                "ignored=1\n[Axe]\ntype=melee\ndamage=27\nragebonus=2\nrage=3\nstamina=1.25\ncooldown=450\n" +
+                "[AXE]\ndamage=29\n[laser]\ntype=gun\ndamage=80\n[empty]\n");
+            GameConfiguration.Load(directory, s);
+            Check(s.Weapons.Count == 5, "All named sections loaded, repeated sections merged, unnamed values skipped");
+            Check(s.Weapons.TryGetValue("aXe", out var axe) && axe.Name == "Axe" && axe.Type == WeaponType.Melee && axe.Damage == 29, "Weapon lookup is case insensitive");
+            Check(axe.RageBonus == 2 && axe.RageCost == 3 && axe.StaminaCost == 1.25m && axe.CooldownMs == 450, "Additional weapons load all parameters");
+            Check(s.Weapons["laser"].Type == WeaponType.Firearm && s.Weapons["laser"].StaminaCost == 0m, "Additional firearm defaults");
+            Check(s.Weapons["empty"].Type == WeaponType.None && !s.Weapons.TryGetValue("missing", out _), "Empty section and missing weapon lookup");
+            s.PunchDamage = 7;
+            Check(s.Weapons["KNIFE"].Damage == 7, "Legacy setters update lookup");
+            s.Weapons["knife"].Damage = 8;
+            Check(s.PunchDamage == 8, "Lookup updates legacy getters");
+            s.PunchStaminaCost = 0m;
+            var snapshot = new GameSession(s);
+            s.Weapons["knife"].Damage = 99;
+            Check(snapshot.Punch() && snapshot.EnemyHealth == 112, "Session deep copies weapon definitions");
+            File.WriteAllText(Path.Combine(directory, "cfg", "weapon.ini"), "[axe]\nstamina=-1\ndamage=invalid\n");
+            GameConfiguration.Load(directory, s);
+            Check(s.Weapons["axe"].Damage == 29 && s.Weapons["axe"].StaminaCost == 1.25m, "Invalid values preserve loaded weapon parameters");
         }
         finally
         {
