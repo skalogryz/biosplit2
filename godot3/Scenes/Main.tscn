@@ -40,7 +40,6 @@ bg_color = Color( 0.811765, 0.811765, 0.811765, 1 )
 [node name="Main" type="Node2D"]
 script = ExtResource( 1 )
 DamageFlashEnabled = false
-ShotDamage = 80
 PunchButtonPath = NodePath("UI/HUD/Node2D/MeleeButton")
 ShootButtonPath = NodePath("UI/HUD/Node2D/ShootButton")
 DodgeButtonPath = NodePath("UI/HUD/Node2D/DodgeButton")
@@ -80,7 +79,7 @@ playing = true
 [node name="Player" type="AnimatedSprite" parent="Combatants"]
 position = Vector2( 374.4, 286.2 )
 frames = ExtResource( 10 )
-animation = "idle"
+animation = "attack3"
 playing = true
 
 [node name="ShotTrail" type="Line2D" parent="Combatants"]

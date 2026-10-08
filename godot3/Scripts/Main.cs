@@ -57,7 +57,7 @@ public class Main : Node2D
 	// Presentation timers only. Combat timing belongs to GameSession.
 	private float scroll, targetScroll, pose, enemyPose, flash, enemyFlash, enemyHurt;
 	private bool blockTouchHeld, blockKeyHeld, punchTouchHeld, punchKeyHeld;
-    private WeaponItem meleeAttackWeapon;
+	private WeaponItem meleeAttackWeapon;
 	private string message = "Ударьте врага, чтобы накопить ярость.";
 
 	public override void _Ready()
@@ -164,8 +164,8 @@ public class Main : Node2D
 	private void OnGameChanged(object sender, GameEvent action)
 	{
 		if (action.Kind == GameEventKind.AttackCompleted && action.Weapon == meleeAttackWeapon)
-            meleeAttackWeapon = null;
-        switch (action.Kind)
+			meleeAttackWeapon = null;
+		switch (action.Kind)
 		{
 			case GameEventKind.Punch:
 				targetScroll += Mathf.Max(0, ScrollPerPunch);
@@ -216,7 +216,7 @@ public class Main : Node2D
 				break;
 			case GameEventKind.AttackCancelled:
 				if (!game.IsAttacking) pose = 0;
-                message = game.IsAttacking ? "Атака отменена: текущий удар будет завершён." : "Атака прервана.";
+				message = game.IsAttacking ? "Атака отменена: текущий удар будет завершён." : "Атака прервана.";
 				break;
 			case GameEventKind.GameOver:
 				message = "Вы проиграли. Нажмите R для новой игры.";
