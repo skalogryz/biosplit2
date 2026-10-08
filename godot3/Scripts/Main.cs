@@ -142,7 +142,7 @@ public class Main : Node2D
 		}
 		game.Tick((decimal)delta);
 		// Input intent only; GameSession checks cooldown, resources and combat state.
-		if (punchTouchHeld || punchKeyHeld) game.Punch();
+		if (punchTouchHeld || punchKeyHeld) TryMeleeAttack();
 		if (!game.Paused) scroll = Mathf.Lerp(scroll, targetScroll, Mathf.Min(1, delta * 12));
 		float width = panorama.MotionMirroring.x;
 		if (width > 0 && scroll >= width) { scroll -= width; targetScroll -= width; }
@@ -231,10 +231,31 @@ public class Main : Node2D
 		if (Godot.Object.IsInstanceValid(console)) console.AppendMessage(message);
 	}
 
-	public void Punch() { game.Punch(); Render(); }
+	private WeaponItem FindReadyWeapon(WeaponType type)
+	{
+		var inventory = game.Player.Inventory;
+		var first = inventory.Weapon1;
+		if (first?.Definition.Type == type && game.CanStartAttack(first)) return first;
+		var second = inventory.Weapon2;
+		if (second?.Definition.Type == type && game.CanStartAttack(second)) return second;
+		return null;
+	}
+
+	private void TryMeleeAttack()
+	{
+		var weapon = FindReadyWeapon(WeaponType.Melee);
+		if (weapon != null) game.StartAttack(weapon);
+	}
+
+	public void Punch() { TryMeleeAttack(); Render(); }
 	public void PressPunch() { punchTouchHeld = true; Punch(); }
 	public void ReleasePunch() { punchTouchHeld = false; }
-	public void Shoot() { game.Shoot(); Render(); }
+	public void Shoot()
+	{
+		var weapon = FindReadyWeapon(WeaponType.Firearm);
+		if (weapon != null) game.StartAttack(weapon);
+		Render();
+	}
 	public void Dodge() { game.Dodge(); Render(); }
 	public void Block() { blockTouchHeld = true; UpdateBlock(); }
 	public void ReleaseBlock() { blockTouchHeld = false; UpdateBlock(); }
@@ -326,9 +347,10 @@ public class Main : Node2D
 		if (Godot.Object.IsInstanceValid(healthBar)) { healthBar.MaxValue = game.MaxHealth; healthBar.Value = game.Health; }
 		if (Godot.Object.IsInstanceValid(rageBar)) { rageBar.MaxValue = game.MaxRage; rageBar.Value = game.Rage; }
 		if (Godot.Object.IsInstanceValid(enemyBar)) { enemyBar.MaxValue = game.EnemyMaxHealth; enemyBar.Value = game.EnemyHealth; }
-		SetButtonEnabled(actions[0], game.CanPunch);
-		SetButtonEnabled(actions[1], game.CanShoot);
-		if (actions[1] is TouchActionButton shootButton) shootButton.Text = "ВЫСТРЕЛ [']  " + game.ShotCost + " ЯР";
+		SetButtonEnabled(actions[0], FindReadyWeapon(WeaponType.Melee) != null);
+		var firearm = FindReadyWeapon(WeaponType.Firearm);
+		SetButtonEnabled(actions[1], firearm != null);
+		if (actions[1] is TouchActionButton shootButton) shootButton.Text = "ВЫСТРЕЛ [']" + (firearm != null ? "  " + firearm.Definition.RageCost + " ЯР" : "");
 		SetButtonEnabled(actions[2], game.CanDodge);
 		SetButtonEnabled(actions[3], !game.GameOver);
 		SetButtonEnabled(actions[4], !game.GameOver);
