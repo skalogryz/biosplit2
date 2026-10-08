@@ -19,22 +19,24 @@ namespace Biosplit.Game
             try
             {
                 var ini = IniDocument.Load(path);
-                game.PunchWeaponType = ReadType(ini, "knife", game.PunchWeaponType);
-                game.ShotWeaponType = ReadType(ini, "handgun", game.ShotWeaponType);
-                game.PunchDamage = ini.GetInt("knife", "damage", game.PunchDamage);
-                game.RagePerPunch = ini.GetInt("knife", "ragebonus", game.RagePerPunch);
-                int knifeRage = ini.GetInt("knife", "rage", game.PunchCost);
-                if (knifeRage >= 0) game.PunchCost = knifeRage;
-                decimal knifeStamina = ini.GetDecimal("knife", "stamina", game.PunchStaminaCost);
-                if (knifeStamina >= 0m) game.PunchStaminaCost = knifeStamina;
-                decimal handgunStamina = ini.GetDecimal("handgun", "stamina", game.ShotStaminaCost);
-                if (handgunStamina >= 0m) game.ShotStaminaCost = handgunStamina;
-                game.ShotDamage = ini.GetInt("handgun", "damage", game.ShotDamage);
-                game.ShotCost = ini.GetInt("handgun", "rage", game.ShotCost);
-                int knifeCooldown = ini.GetInt("knife", "cooldown", game.PunchCooldownMs);
-                if (knifeCooldown >= 0) game.PunchCooldownMs = knifeCooldown;
-                int handgunCooldown = ini.GetInt("handgun", "cooldown", game.ShotCooldownMs);
-                if (handgunCooldown >= 0) game.ShotCooldownMs = handgunCooldown;
+                foreach (string section in ini.SectionNames)
+                {
+                    if (string.IsNullOrWhiteSpace(section)) continue;
+                    var weapon = game.Weapons.TryGetValue(section, out var existing)
+                        ? existing.Copy() : new WeaponSettings(section);
+                    weapon.Type = ReadType(ini, section, weapon.Type);
+                    int damage = ini.GetInt(section, "damage", weapon.Damage);
+                    if (damage >= 0) weapon.Damage = damage;
+                    int rageBonus = ini.GetInt(section, "ragebonus", weapon.RageBonus);
+                    if (rageBonus >= 0) weapon.RageBonus = rageBonus;
+                    int rageCost = ini.GetInt(section, "rage", weapon.RageCost);
+                    if (rageCost >= 0) weapon.RageCost = rageCost;
+                    decimal stamina = ini.GetDecimal(section, "stamina", weapon.StaminaCost);
+                    if (stamina >= 0m) weapon.StaminaCost = stamina;
+                    int cooldown = ini.GetInt(section, "cooldown", weapon.CooldownMs);
+                    if (cooldown >= 0) weapon.CooldownMs = cooldown;
+                    game.RegisterWeapon(weapon);
+                }
             }
             catch (Exception error) when (error is IOException || error is UnauthorizedAccessException)
             {

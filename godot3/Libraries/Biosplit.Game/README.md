@@ -36,3 +36,16 @@ Godot передаёт OS.GetExecutablePath() только из Scripts/Main.cs.
     dotnet run --project Tests/Biosplit.Game.Tests/Biosplit.Game.Tests.csproj
 
 Тесты покрывают расход ресурсов, кулдауны, удержание блока, отскок, паузу и лечение, возрождение и награды, поражение, настройки INI, InvariantCulture и ограничения числовых значений.
+
+## Таблица оружия
+
+GameSettings.Weapons — Lookup по имени секции INI (регистр не учитывается). Все именованные секции weapon.ini или weapons.ini загружаются автоматически, поэтому можно добавлять [axe], [rifle] и другие виды без изменения загрузчика.
+
+Запись WeaponSettings содержит Name, Type, Damage, RageBonus, RageCost, StaminaCost и CooldownMs. Ключи INI: type, damage, ragebonus, rage, stamina, cooldown. По умолчанию присутствуют knife и handgun. У нового оружия Type=None, остальные параметры равны нулю. Отсутствующие или некорректные параметры сохраняют существующее значение. Коллекция доступна для чтения; параметры существующих определений доступны для настройки.
+
+Пример безопасного поиска:
+
+    if (settings.Weapons.TryGetValue("axe", out var weapon))
+        Console.WriteLine(weapon.Damage);
+
+Старые свойства PunchDamage, ShotCost и другие являются обращениями к соответствующим определениям knife/handgun. GameSession копирует таблицу и каждое определение при создании, поэтому последующие изменения настроек не меняют текущий бой. Добавление в Lookup само по себе не назначает новое оружие кнопкам интерфейса.
