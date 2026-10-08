@@ -1,5 +1,7 @@
 using System;
 using System.IO;
+using System.Collections.Generic;
+using System.Globalization;
 using Biosplit.Ini;
 
 namespace Biosplit.Game
@@ -37,6 +39,7 @@ namespace Biosplit.Game
                     if (cooldown >= 0) weapon.CooldownMs = cooldown;
                     int attackDuration = ini.GetInt(section, "attackduration", weapon.AttackDurationMs);
                     if (attackDuration >= 0) weapon.AttackDurationMs = attackDuration;
+                    weapon.Striker = ReadStrikes(ini, section, warning);
                     game.RegisterWeapon(weapon);
                 }
             }
@@ -45,6 +48,35 @@ namespace Biosplit.Game
                 warning?.Invoke("Cannot read " + Path.GetFileName(path) + ": " + error.Message);
             }
         }
+        private static StrikeSettings[] ReadStrikes(IniDocument ini, string section, Action<string> warning)
+        {
+            var strikes = new List<StrikeSettings>();
+            for (int index = 0; ; index++)
+            {
+                string key = "strike" + index.ToString(CultureInfo.InvariantCulture);
+                string value = ini.GetString(section, key);
+                if (value == null) break;
+                string[] parts = value.Split(',');
+                if (parts.Length != 3
+                    || !int.TryParse(parts[0], NumberStyles.Integer, CultureInfo.InvariantCulture, out int windup)
+                    || !int.TryParse(parts[1], NumberStyles.Integer, CultureInfo.InvariantCulture, out int recovery)
+                    || windup < 0 || recovery < 0 || string.IsNullOrWhiteSpace(parts[2]))
+                {
+                    warning?.Invoke("Invalid [" + section + "] " + key + ": expected windupMs,recoveryMs,name. Strike sequence stopped.");
+                    break;
+                }
+                strikes.Add(new StrikeSettings
+                {
+                    WindupMs = windup,
+                    RecoveryMs = recovery,
+                    Name = parts[2].Trim(),
+                    DamageDurationMs = 25,
+                    DamageModifier = 1m
+                });
+            }
+            return strikes.ToArray();
+        }
+
         private static WeaponType ReadType(IniDocument ini, string section, WeaponType fallback)
         {
             string value = ini.GetString(section, "type");
