@@ -80,6 +80,41 @@ internal static class Program
         Check(game.Stamina == 0.2m, "Zero knife cooldown allows immediate regeneration");
     }
 
+    private static void CharacterInventories()
+    {
+        var settings = Quiet();
+        var first = new Character("first");
+        var second = new Character("second");
+        Check(!ReferenceEquals(first.Inventory, second.Inventory), "Characters own independent inventories");
+        Check(first.Inventory.Weapon1 == null && first.Inventory.Weapon2 == null, "New inventory has empty slots");
+        var definition = settings.Weapons["handgun"];
+        first.Inventory.Weapon1 = new WeaponItem(definition, 12);
+        second.Inventory.Weapon2 = new WeaponItem(definition, 30);
+        Check(ReferenceEquals(first.Inventory.Weapon1.Definition, definition) &&
+            ReferenceEquals(second.Inventory.Weapon2.Definition, definition), "Items reference the exact lookup definition");
+        first.Inventory.Weapon1.Ammo = 5;
+        Check(second.Inventory.Weapon2.Ammo == 30 && second.Inventory.Weapon1 == null, "Ammo and slots are per character and per item");
+        first.Inventory.Weapon2 = new WeaponItem(settings.Weapons["knife"]);
+        Check(first.Inventory.Weapon2.Definition.Type == WeaponType.Melee && first.Inventory.Weapon2.Ammo == 0, "Melee item also has ammo defaulting to zero");
+        first.Inventory.Weapon1 = null;
+        Check(second.Inventory.Weapon2.Ammo == 30, "Clearing one inventory leaves another unchanged");
+        bool rejected = false;
+        try { new WeaponItem(null); } catch (ArgumentNullException) { rejected = true; }
+        Check(rejected, "Item requires a weapon definition");
+
+        var game = new GameSession(settings);
+        var otherGame = new GameSession(settings);
+        Check(game.Player.Inventory.Weapon1.Definition.Name == "knife" &&
+            game.Player.Inventory.Weapon2.Definition.Name == "handgun", "Current player starts with knife and handgun");
+        Check(!ReferenceEquals(game.Player.Inventory, otherGame.Player.Inventory) &&
+            !ReferenceEquals(game.Player.Inventory.Weapon2, otherGame.Player.Inventory.Weapon2), "Sessions do not share inventory or item instances");
+        settings.Weapons["handgun"].Damage = 999;
+        Check(game.Player.Inventory.Weapon2.Definition.Damage == 1, "Inventory uses session lookup snapshot");
+        for (int i = 0; i < 3; i++) { game.Tick(1.5m); game.Punch(); }
+        Check(game.Player.Inventory.Weapon2.Ammo == 0 && game.Shoot() &&
+            game.Player.Inventory.Weapon2.Ammo == 0, "Ammo is not required or consumed by firing yet");
+    }
+
     private static void Defense()
     {
         var s = Quiet(); s.EnemyAttackInterval = 0.5m;
@@ -205,7 +240,7 @@ internal static class Program
     {
         try
         {
-            Weapons(); KnifeCooldownStamina(); Defense(); InventoryAndRespawn(); ConfigurationAndBounds();
+            Weapons(); KnifeCooldownStamina(); CharacterInventories(); Defense(); InventoryAndRespawn(); ConfigurationAndBounds();
             Console.WriteLine("PASS: " + checks + " checks without Godot");
             return 0;
         }

@@ -49,3 +49,15 @@ GameSettings.Weapons — Lookup по имени секции INI (регистр
         Console.WriteLine(weapon.Damage);
 
 Старые свойства PunchDamage, ShotCost и другие являются обращениями к соответствующим определениям knife/handgun. GameSession копирует таблицу и каждое определение при создании, поэтому последующие изменения настроек не меняют текущий бой. Добавление в Lookup само по себе не назначает новое оружие кнопкам интерфейса.
+
+## Инвентарь персонажа
+
+Каждый Character создаёт собственный CharacterInventory. В нём два опциональных слота: Weapon1 и Weapon2 типа WeaponItem (null означает пустой слот). WeaponItem.Definition ссылается на конкретное определение WeaponSettings из Lookup, а Ammo хранится отдельно для каждого экземпляра предмета. Ammo по умолчанию равен 0, пока не ограничивает стрельбу и не расходуется.
+
+Пример:
+
+    var hero = new Character("hero");
+    hero.Inventory.Weapon1 = new WeaponItem(settings.Weapons["knife"]);
+    hero.Inventory.Weapon2 = new WeaponItem(settings.Weapons["handgun"], ammo: 12);
+
+Текущий персонаж доступен через GameSession.Player. Его стартовые предметы — knife и handgun; определения берутся из копии Lookup, принадлежащей сессии. Другие персонажи имеют отдельные инвентари; единого инвентаря на GameSession нет. Назначение слотов пока не меняет существующие команды Punch/Shoot.

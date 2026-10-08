@@ -15,8 +15,12 @@ namespace Biosplit.Game
             this.settings = (settings ?? throw new ArgumentNullException(nameof(settings))).NormalizedCopy();
             Health = this.settings.MaxHealth;
             EnemyHealth = this.settings.EnemyHealth;
+            Player = new Character("hero");
+            Player.Inventory.Weapon1 = new WeaponItem(this.settings.Weapons["knife"]);
+            Player.Inventory.Weapon2 = new WeaponItem(this.settings.Weapons["handgun"]);
         }
 
+        public Character Player { get; }
         public int Health { get; private set; }
         public int Rage { get; private set; }
         public decimal Stamina { get; private set; }
