@@ -36,6 +36,8 @@ namespace Biosplit.Game
         public int RagePointStep => Math.Max(1, MaxRage / 10);
         public int RagePerPunch => settings.RagePerPunch;
         public int ShotCost => settings.ShotCost;
+        public WeaponType PunchWeaponType => settings.PunchWeaponType;
+        public WeaponType ShotWeaponType => settings.ShotWeaponType;
         public decimal CooldownRemaining => cooldown;
         public decimal DodgeRemaining => dodgeRemaining;
         public bool EnemyWarning => EnemyHealth > 0 && enemyClock >= settings.EnemyAttackInterval - settings.EnemyWarningTime;

@@ -15,6 +15,8 @@ namespace Biosplit.Game
         public int ShotCost { get; set; } = 30;
         public decimal PunchStaminaCost { get; set; } = 3m;
         public decimal ShotStaminaCost { get; set; }
+        public WeaponType PunchWeaponType { get; set; } = WeaponType.Melee;
+        public WeaponType ShotWeaponType { get; set; } = WeaponType.Firearm;
         public int PunchDamage { get; set; } = 12;
         public int ShotDamage { get; set; } = 40;
         public int PunchCooldownMs { get; set; } = 260;

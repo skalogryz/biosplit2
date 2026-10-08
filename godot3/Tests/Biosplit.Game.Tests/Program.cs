@@ -155,6 +155,17 @@ internal static class Program
             s.MaxHealth = 1; Check(g.MaxHealth == 150, "Session owns its settings snapshot");
             GameConfiguration.Load(Path.Combine(directory, "missing"), s);
             Check(s.PunchStaminaCost == 3.25m, "Missing INI preserves defaults");
+            Check(s.PunchWeaponType == WeaponType.Melee && s.ShotWeaponType == WeaponType.Firearm, "Missing type preserves existing weapon defaults");
+            foreach (string alias in new[] { "gun", "firearm", "FiReArM" })
+            {
+                File.WriteAllText(Path.Combine(directory, "cfg", "weapon.ini"), "[knife]\ntype=melee\n[handgun]\ntype=" + alias + "\n");
+                GameConfiguration.Load(directory, s);
+                var typedGame = new GameSession(s);
+                Check(typedGame.PunchWeaponType == WeaponType.Melee && typedGame.ShotWeaponType == WeaponType.Firearm, "Weapon type aliases and session snapshot: " + alias);
+            }
+            File.WriteAllText(Path.Combine(directory, "cfg", "weapon.ini"), "[knife]\ntype=unknown\n[handgun]\ntype=none\n");
+            GameConfiguration.Load(directory, s);
+            Check(s.PunchWeaponType == WeaponType.None && s.ShotWeaponType == WeaponType.None, "Unknown and none type map to None");
         }
         finally
         {

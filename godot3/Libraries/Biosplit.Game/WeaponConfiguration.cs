@@ -19,6 +19,8 @@ namespace Biosplit.Game
             try
             {
                 var ini = IniDocument.Load(path);
+                game.PunchWeaponType = ReadType(ini, "knife", game.PunchWeaponType);
+                game.ShotWeaponType = ReadType(ini, "handgun", game.ShotWeaponType);
                 game.PunchDamage = ini.GetInt("knife", "damage", game.PunchDamage);
                 game.RagePerPunch = ini.GetInt("knife", "ragebonus", game.RagePerPunch);
                 int knifeRage = ini.GetInt("knife", "rage", game.PunchCost);
@@ -37,6 +39,21 @@ namespace Biosplit.Game
             catch (Exception error) when (error is IOException || error is UnauthorizedAccessException)
             {
                 warning?.Invoke("Cannot read " + Path.GetFileName(path) + ": " + error.Message);
+            }
+        }
+        private static WeaponType ReadType(IniDocument ini, string section, WeaponType fallback)
+        {
+            string value = ini.GetString(section, "type");
+            if (value == null) return fallback;
+            switch (value.Trim().ToLowerInvariant())
+            {
+                case "gun":
+                case "firearm":
+                    return WeaponType.Firearm;
+                case "melee":
+                    return WeaponType.Melee;
+                default:
+                    return WeaponType.None;
             }
         }
     }
