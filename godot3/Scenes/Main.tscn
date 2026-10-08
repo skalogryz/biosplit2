@@ -73,14 +73,12 @@ centered = false
 
 [node name="Enemy" type="AnimatedSprite" parent="Combatants"]
 position = Vector2( 595.2, 286.2 )
-scale = Vector2( 1.575, 1.575 )
 frames = ExtResource( 11 )
 animation = "idle"
 playing = true
 
 [node name="Player" type="AnimatedSprite" parent="Combatants"]
 position = Vector2( 374.4, 286.2 )
-scale = Vector2( 1.575, 1.575 )
 frames = ExtResource( 10 )
 animation = "idle"
 playing = true
