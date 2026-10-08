@@ -11,6 +11,8 @@ namespace Biosplit.Ini
         private readonly Dictionary<string, Dictionary<string, string>> sections =
             new Dictionary<string, Dictionary<string, string>>(StringComparer.OrdinalIgnoreCase);
 
+        public IEnumerable<string> SectionNames => sections.Keys;
+
         public static IniDocument Load(string filePath)
         {
             using (var reader = new StreamReader(filePath))
@@ -30,6 +32,8 @@ namespace Biosplit.Ini
                 if (line.StartsWith("[") && line.EndsWith("]"))
                 {
                     section = line.Substring(1, line.Length - 2).Trim();
+                    if (!document.sections.ContainsKey(section))
+                        document.sections.Add(section, new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase));
                     continue;
                 }
                 int separator = line.IndexOf('=');
