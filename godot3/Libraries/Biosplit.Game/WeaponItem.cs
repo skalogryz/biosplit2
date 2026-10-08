@@ -13,6 +13,8 @@ namespace Biosplit.Game
 
         public WeaponSettings Definition { get; }
         public int Ammo { get; set; }
+        // Zero-based index; -1 means this item is not performing a strike.
+        public int CurrentStrikeIndex { get; internal set; } = -1;
         // Remaining cooldown in seconds, independent for each physical item.
         public decimal Cooldown { get; private set; }
         internal void BeginCooldown(int milliseconds) => Cooldown = Math.Max(0, milliseconds) / 1000m;

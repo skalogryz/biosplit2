@@ -11,6 +11,15 @@ namespace Biosplit.Game
         public decimal StaminaCost { get; set; }
         public int CooldownMs { get; set; }
         public int AttackDurationMs { get; set; }
-        internal WeaponSettings Copy() => (WeaponSettings)MemberwiseClone();
+        public StrikeSettings[] Striker { get; set; } = new[] { new StrikeSettings() };
+        internal WeaponSettings Copy()
+        {
+            var copy = (WeaponSettings)MemberwiseClone();
+            var strikes = Striker ?? new StrikeSettings[0];
+            copy.Striker = new StrikeSettings[strikes.Length];
+            for (int i = 0; i < strikes.Length; i++)
+                copy.Striker[i] = strikes[i]?.Copy() ?? new StrikeSettings();
+            return copy;
+        }
     }
 }

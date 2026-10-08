@@ -15,11 +15,18 @@ namespace Biosplit.Game
             public WeaponItem Item;
             public WeaponSettings Definition;
             public decimal Remaining;
+            public decimal UntilDamage;
+            public bool DamageApplied;
+            public bool CancellationRequested;
+            public int DamageDealt;
         }
         private Attack activeAttack;
         public bool IsAttacking => activeAttack != null;
+        public bool IsAttackCancellationRequested => activeAttack?.CancellationRequested ?? false;
         public WeaponItem ActiveWeapon => activeAttack?.Item;
         public decimal AttackRemaining => activeAttack?.Remaining ?? 0m;
+        public StrikeSettings CurrentStrike => activeAttack == null ? null
+            : activeAttack.Definition.Striker[activeAttack.Item.CurrentStrikeIndex].Copy();
         public event EventHandler<GameEvent> Changed;
 
         public GameSession(GameSettings settings)
@@ -72,6 +79,7 @@ namespace Biosplit.Game
             var definition = weapon.Definition;
             if (definition.Type != WeaponType.Melee && definition.Type != WeaponType.Firearm)
                 return AttackResult.UnsupportedWeaponType;
+            if (definition.Striker == null || definition.Striker.Length == 0) return AttackResult.NoStrikes;
             if (GameOver) return AttackResult.GameOver;
             if (InventoryOpen) return AttackResult.InventoryOpen;
             if (Blocking) return AttackResult.Blocking;
@@ -89,26 +97,11 @@ namespace Biosplit.Game
         public void Tick(decimal seconds)
         {
             if (seconds <= 0m || Paused) return;
-            var attack = activeAttack;
-            if (attack != null && attack.Remaining <= seconds)
-            {
-                decimal elapsed = attack.Remaining;
-                AdvanceItemsAndStamina(elapsed);
-                dodgeRemaining = Math.Max(0m, dodgeRemaining - elapsed);
-                CompleteAttack(attack);
-                decimal rest = seconds - elapsed;
-                AdvanceItemsAndStamina(rest);
-                dodgeRemaining = Math.Max(0m, dodgeRemaining - rest);
-                if (EnemyHealth == 0) return;
-            }
-            else
-            {
-                AdvanceItemsAndStamina(seconds);
-                dodgeRemaining = Math.Max(0m, dodgeRemaining - seconds);
-                if (attack != null) attack.Remaining -= seconds;
-            }
+            bool killedByAttack = AdvanceAttackAndItems(seconds);
+            if (killedByAttack) return;
             if (EnemyHealth <= 0)
             {
+                if (IsAttacking) return;
                 respawnRemaining -= seconds;
                 if (respawnRemaining <= 0m)
                 {
@@ -147,37 +140,101 @@ namespace Biosplit.Game
             var attack = new Attack
             {
                 Item = weapon,
-                Definition = definition,
-                Remaining = Math.Max(0, definition.AttackDurationMs) / 1000m
+                Definition = definition
             };
             activeAttack = attack;
+            weapon.CurrentStrikeIndex = 0;
             Emit(GameEventKind.AttackStarted, weapon: weapon);
-            // An event subscriber may have cancelled this attack already.
+            // Event subscribers may request cancellation; the first strike still runs.
             if (activeAttack != attack) return AttackResult.Success;
-            Emit(definition.Type == WeaponType.Melee ? GameEventKind.Punch : GameEventKind.Shot, weapon: weapon);
-            if (activeAttack == attack && attack.Remaining == 0m) CompleteAttack(attack);
+            BeginStrike(attack);
+            AdvanceAttackAndItems(0m);
             return AttackResult.Success;
         }
 
+        // Request cancellation of the sequence; the current strike always finishes.
         public bool CancelAttack()
         {
             var attack = activeAttack;
-            if (attack == null) return false;
-            activeAttack = null;
-            attack.Item.BeginCooldown(attack.Definition.CooldownMs);
+            if (attack == null || attack.CancellationRequested) return false;
+            attack.CancellationRequested = true;
             Emit(GameEventKind.AttackCancelled, weapon: attack.Item);
             return true;
         }
-
         private void CompleteAttack(Attack attack)
         {
             if (activeAttack != attack) return;
             activeAttack = null;
+            attack.Item.CurrentStrikeIndex = -1;
             attack.Item.BeginCooldown(attack.Definition.CooldownMs);
-            int damage = Math.Min(EnemyHealth, Math.Max(1, attack.Definition.Damage));
+            Emit(GameEventKind.AttackCompleted, attack.DamageDealt, weapon: attack.Item);
+        }
+        private static decimal StrikeDuration(WeaponSettings weapon, StrikeSettings strike)
+        {
+            decimal total = (decimal)Math.Max(0, strike.WindupMs) + Math.Max(0, strike.DamageDurationMs) + Math.Max(0, strike.RecoveryMs);
+            return (total > 0m ? total : Math.Max(0, weapon.AttackDurationMs)) / 1000m;
+        }
+
+        private void BeginStrike(Attack attack)
+        {
+            var strike = attack.Definition.Striker[attack.Item.CurrentStrikeIndex];
+            attack.Remaining = StrikeDuration(attack.Definition, strike);
+            attack.UntilDamage = strike.WindupMs <= 0 && strike.DamageDurationMs <= 0 && strike.RecoveryMs <= 0
+                ? Math.Max(0, attack.Definition.AttackDurationMs) / 1000m : Math.Max(0, strike.WindupMs) / 1000m;
+            attack.DamageApplied = false;
+            Emit(attack.Definition.Type == WeaponType.Melee ? GameEventKind.Punch : GameEventKind.Shot, weapon: attack.Item);
+        }
+
+        private void FinishStrike(Attack attack)
+        {
+            if (activeAttack != attack) return;
+            if (!attack.CancellationRequested && EnemyHealth > 0 && attack.Item.CurrentStrikeIndex + 1 < attack.Definition.Striker.Length)
+            {
+                attack.Item.CurrentStrikeIndex++;
+                BeginStrike(attack);
+            }
+            else CompleteAttack(attack);
+        }
+
+        private void ApplyAttackDamage(Attack attack)
+        {
+            if (activeAttack != attack || attack.DamageApplied) return;
+            attack.DamageApplied = true;
+            var strike = attack.Definition.Striker[attack.Item.CurrentStrikeIndex];
+            int damage = strike.CalculateDamage(attack.Definition.Damage);
+            attack.DamageDealt = (int)Math.Min(int.MaxValue, (long)attack.DamageDealt + Math.Min(EnemyHealth, damage));
             Rage = (int)Math.Min(MaxRage, (long)Rage + Math.Max(0, attack.Definition.RageBonus));
-            HurtEnemy(Math.Max(1, attack.Definition.Damage));
-            Emit(GameEventKind.AttackCompleted, damage, weapon: attack.Item);
+            if (damage > 0) HurtEnemy(damage);
+        }
+
+        private bool AdvanceAttackAndItems(decimal seconds)
+        {
+            bool killed = false;
+            while (true)
+            {
+                var attack = activeAttack;
+                if (attack == null)
+                {
+                    AdvanceItemsAndStamina(seconds);
+                    dodgeRemaining = Math.Max(0m, dodgeRemaining - seconds);
+                    return killed;
+                }
+                decimal boundary = attack.DamageApplied ? attack.Remaining : attack.UntilDamage;
+                if (seconds == 0m && boundary > 0m) return killed;
+                decimal elapsed = Math.Min(seconds, boundary);
+                AdvanceItemsAndStamina(elapsed);
+                dodgeRemaining = Math.Max(0m, dodgeRemaining - elapsed);
+                seconds -= elapsed;
+                attack.Remaining = Math.Max(0m, attack.Remaining - elapsed);
+                attack.UntilDamage = Math.Max(0m, attack.UntilDamage - elapsed);
+                if (!attack.DamageApplied && attack.UntilDamage == 0m)
+                {
+                    int healthBefore = EnemyHealth;
+                    ApplyAttackDamage(attack);
+                    killed |= healthBefore > 0 && EnemyHealth == 0;
+                }
+                if (activeAttack == attack && attack.Remaining == 0m) FinishStrike(attack);
+            }
         }
         public bool Dodge()
         {

@@ -13,6 +13,7 @@ namespace Biosplit.Game
         WeaponOnCooldown,
         Dodging,
         InsufficientRage,
-        InsufficientStamina
+        InsufficientStamina,
+        NoStrikes
     }
 }
