@@ -46,6 +46,7 @@ public class Main : Node2D
 	private Vector2 playerOrigin, enemyOrigin, backgroundOrigin;
 	private Color playerColor, enemyColor;
 	private string playerAction = "attack";
+	private bool shootingPose;
 	private Label healthLabel, rageLabel, staminaLabel, status, enemyStatus, inventoryText;
 	private ProgressBar healthBar, rageBar, enemyBar;
 	private RageIndicator rageIndicator;
@@ -151,7 +152,7 @@ public class Main : Node2D
 		SetAnimation(enemy, game.EnemyHealth <= 0 ? "defeat" : enemyHurt > 0 ? "hurt" : enemyPose > 0 ? "attack" : "idle");
 		player.Playing = !game.Paused;
 		enemy.Playing = !game.Paused;
-		shotTrail.Visible = pose > 0 && playerAction == "shoot";
+		shotTrail.Visible = pose > 0 && shootingPose;
 		if (shotTrail.Visible)
 		{
 			shotTrail.SetPointPosition(0, player.Position + new Vector2(45, -25));
@@ -167,13 +168,15 @@ public class Main : Node2D
 		{
 			case GameEventKind.Punch:
 				targetScroll += Mathf.Max(0, ScrollPerPunch);
-				StartPlayerAnimation("attack");
-				pose = Mathf.Max(AnimationDuration(player, "attack", 0.20f), (float)game.AttackRemaining);
+				shootingPose = false;
+				StartPlayerAnimation(StrikeAnimation(action, "attack"));
+				pose = Mathf.Max(AnimationDuration(player, playerAction, 0.20f), (float)game.AttackRemaining);
 				message = "Удар! +" + Math.Max(0, action.Weapon?.Definition.RageBonus ?? 0) + " ярости.";
 				break;
 			case GameEventKind.Shot:
-				StartPlayerAnimation("shoot");
-				pose = Mathf.Max(AnimationDuration(player, "shoot", 0.23f), (float)game.AttackRemaining);
+				shootingPose = true;
+				StartPlayerAnimation(StrikeAnimation(action, "shoot"));
+				pose = Mathf.Max(AnimationDuration(player, playerAction, 0.23f), (float)game.AttackRemaining);
 				message = "Выстрел! −" + Math.Max(0, action.Weapon?.Definition.RageCost ?? 0) + " ярости.";
 				break;
 			case GameEventKind.Dodge:
@@ -211,8 +214,7 @@ public class Main : Node2D
 				message = "Новый противник!";
 				break;
 			case GameEventKind.AttackCancelled:
-				pose = 0;
-				message = "Атака отменена.";
+				message = "Атака отменена: текущий удар будет завершён.";
 				break;
 			case GameEventKind.GameOver:
 				message = "Вы проиграли. Нажмите R для новой игры.";
@@ -295,6 +297,12 @@ public class Main : Node2D
 		if (!actor.Frames.HasAnimation(animation)) return minimum;
 		float speed = actor.Frames.GetAnimationSpeed(animation) * actor.SpeedScale;
 		return speed > 0 ? Mathf.Max(minimum, actor.Frames.GetFrameCount(animation) / speed) : minimum;
+	}
+
+	private string StrikeAnimation(GameEvent action, string fallback)
+	{
+		string name = game.CurrentStrike?.Name;
+		return !string.IsNullOrEmpty(name) && player.Frames.HasAnimation(name) ? name : fallback;
 	}
 
 	private void StartPlayerAnimation(string animation)
