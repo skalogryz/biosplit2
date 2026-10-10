@@ -280,6 +280,12 @@ public class Main : Node2D
 
 	public override void _Input(InputEvent inputEvent)
 	{
+		if (inputEvent is InputEventKey consoleKey && consoleKey.Scancode == (uint)KeyList.Quoteleft)
+		{
+			if (consoleKey.Pressed && !consoleKey.Echo) ToggleConsole();
+			GetTree().SetInputAsHandled();
+			return;
+		}
 		// Receive release even if a Control consumes the key event.
 		if (inputEvent is InputEventKey punchKey && punchKey.Scancode == (uint)KeyList.Slash && !punchKey.Pressed)
 		{
