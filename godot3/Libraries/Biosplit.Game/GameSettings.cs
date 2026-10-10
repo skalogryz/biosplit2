@@ -15,6 +15,13 @@ namespace Biosplit.Game
         public IReadOnlyDictionary<string, WeaponSettings> Weapons { get; private set; }
         internal void RegisterWeapon(WeaponSettings weapon) { weapons[weapon.Name] = weapon; }
 
+        public decimal HeroPos { get; set; } = 360m;
+        // Lerp coefficient for approach and return: weight = coefficient * deltaSeconds.
+        public decimal HeroSpeed { get; set; } = 20m;
+        public decimal EnemyMeleePos { get; set; } = 530m;
+        // Lerp coefficient for enemy approach and return.
+        public decimal EnemySpeed { get; set; } = 20m;
+        public decimal EnemyMeleeSize { get; set; } = 80m;
         public int MaxHealth { get; set; } = 100;
         public int MaxRage { get; set; } = 100;
         public decimal MaxStamina { get; set; } = 100m;
@@ -32,6 +39,9 @@ namespace Biosplit.Game
             copy.weapons = new Dictionary<string, WeaponSettings>(StringComparer.OrdinalIgnoreCase);
             foreach (var entry in weapons) copy.weapons.Add(entry.Key, entry.Value.Copy());
             copy.Weapons = new ReadOnlyDictionary<string, WeaponSettings>(copy.weapons);
+            copy.HeroSpeed = Math.Max(0.001m, HeroSpeed);
+            copy.EnemySpeed = Math.Max(0.001m, EnemySpeed);
+            copy.EnemyMeleeSize = Math.Max(0m, EnemyMeleeSize);
             copy.MaxHealth = Math.Max(1, MaxHealth);
             copy.MaxRage = Math.Max(1, MaxRage);
             copy.MaxStamina = Math.Max(0m, MaxStamina);

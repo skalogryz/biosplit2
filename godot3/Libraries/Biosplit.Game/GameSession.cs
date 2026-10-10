@@ -13,6 +13,8 @@ namespace Biosplit.Game
         private sealed class Attack
         {
             public WeaponItem Item;
+            public bool EnemyAttacker;
+            public bool Approaching;
             public WeaponSettings Definition;
             public decimal Remaining;
             public decimal UntilDamage;
@@ -21,11 +23,18 @@ namespace Biosplit.Game
             public int DamageDealt;
         }
         private Attack activeAttack;
+        private bool separating;
+        public bool IsApproaching => activeAttack?.Approaching ?? false;
+        public bool IsSeparating => separating;
+        public decimal HeroPos { get; private set; }
+        public decimal EnemyMeleePos { get; private set; }
+        public decimal HeroInitialPos => settings.HeroPos;
+        public decimal EnemyInitialPos => settings.EnemyMeleePos;
         public bool IsAttacking => activeAttack != null;
         public bool IsAttackCancellationRequested => activeAttack?.CancellationRequested ?? false;
         public WeaponItem ActiveWeapon => activeAttack?.Item;
         public decimal AttackRemaining => activeAttack?.Remaining ?? 0m;
-        public StrikeSettings CurrentStrike => activeAttack == null ? null
+        public StrikeSettings CurrentStrike => activeAttack == null || activeAttack.Approaching ? null
             : activeAttack.Definition.Striker[activeAttack.Item.CurrentStrikeIndex].Copy();
         public event EventHandler<GameEvent> Changed;
 
@@ -36,12 +45,18 @@ namespace Biosplit.Game
             EnemyHealth = this.settings.EnemyHealth;
             Player = new Character("hero");
             characters.Add(Player);
+            Enemy = new Character("enemy");
+            characters.Add(Enemy);
+            Enemy.Inventory.Weapon1 = new WeaponItem(new WeaponSettings("enemy_melee") { Type = WeaponType.Melee, Damage = this.settings.EnemyDamage });
+            HeroPos = this.settings.HeroPos;
+            EnemyMeleePos = this.settings.EnemyMeleePos;
             Characters = characters.AsReadOnly();
             Player.Inventory.Weapon1 = new WeaponItem(this.settings.Weapons["knife"]);
             Player.Inventory.Weapon2 = new WeaponItem(this.settings.Weapons["handgun"]);
         }
 
         public Character Player { get; }
+        public Character Enemy { get; }
         public int Health { get; private set; }
         public int Rage { get; private set; }
         public decimal Stamina { get; private set; }
@@ -73,21 +88,25 @@ namespace Biosplit.Game
         public bool CanPunch => CanStartAttack(Player.Inventory.Weapon1);
         public bool CanShoot => CanStartAttack(Player.Inventory.Weapon2);
         public bool CanStartAttack(WeaponItem weapon) => GetAttackStartResult(weapon) == AttackResult.Success;
-        public AttackResult GetAttackStartResult(WeaponItem weapon)
+        public AttackResult GetAttackStartResult(WeaponItem weapon) => GetAttackStartResult(Player, weapon);
+        public AttackResult GetAttackStartResult(Character attacker, WeaponItem weapon)
         {
+            if (attacker != Player && attacker != Enemy) return AttackResult.UnsupportedAttacker;
+            bool enemyAttacker = attacker == Enemy;
             if (weapon == null) return AttackResult.NoWeapon;
             var definition = weapon.Definition;
             if (definition.Type != WeaponType.Melee && definition.Type != WeaponType.Firearm)
                 return AttackResult.UnsupportedWeaponType;
             if (GameOver) return AttackResult.GameOver;
             if (InventoryOpen) return AttackResult.InventoryOpen;
-            if (Blocking) return AttackResult.Blocking;
+            if (!enemyAttacker && Blocking) return AttackResult.Blocking;
             if (EnemyHealth <= 0) return AttackResult.NoEnemy;
             if (IsAttacking) return AttackResult.AttackInProgress;
+            if (separating && definition.Type == WeaponType.Melee) return AttackResult.Separating;
             if (weapon.Cooldown > 0m) return AttackResult.WeaponOnCooldown;
-            if (Dodging && definition.Type == WeaponType.Melee) return AttackResult.Dodging;
-            if (Rage < Math.Max(0, definition.RageCost)) return AttackResult.InsufficientRage;
-            if (Stamina < Math.Max(0m, definition.StaminaCost)) return AttackResult.InsufficientStamina;
+            if (!enemyAttacker && Dodging && definition.Type == WeaponType.Melee) return AttackResult.Dodging;
+            if (!enemyAttacker && Rage < Math.Max(0, definition.RageCost)) return AttackResult.InsufficientRage;
+            if (!enemyAttacker && Stamina < Math.Max(0m, definition.StaminaCost)) return AttackResult.InsufficientStamina;
             return AttackResult.Success;
         }
         public bool CanDodge => !Paused && !Blocking && !Dodging && EnemyHealth > 0 && Stamina >= settings.DodgeStamina;
@@ -95,7 +114,8 @@ namespace Biosplit.Game
 
         public void Tick(decimal seconds)
         {
-            if (seconds <= 0m || Paused) return;
+            if (seconds <= 0m || InventoryOpen) return;
+            if (GameOver) { AdvanceSeparation(seconds); return; }
             bool killedByAttack = AdvanceAttackAndItems(seconds);
             if (killedByAttack) return;
             if (EnemyHealth <= 0)
@@ -111,42 +131,42 @@ namespace Biosplit.Game
                 }
                 return;
             }
-            // Preserve the existing one-attack-per-update timing policy.
+            if (IsAttacking || separating) return;
             if (seconds < settings.EnemyAttackInterval - enemyClock)
             {
                 enemyClock += seconds;
                 return;
             }
             enemyClock = 0m;
-            bool dodged = Dodging;
-            bool blocked = !dodged && Blocking;
-            int damage = dodged || blocked ? 0 : settings.EnemyDamage;
-            Health = Math.Max(0, Health - damage);
-            Emit(GameEventKind.EnemyAttacked, damage, blocked, dodged);
-            if (GameOver) { CancelAttack(isInterrupt: true); Emit(GameEventKind.GameOver); }
+            StartAttack(Enemy, Enemy.Inventory.Weapon1);
         }
-
         public bool Punch() => StartAttack(Player.Inventory.Weapon1) == AttackResult.Success;
         public bool Shoot() => StartAttack(Player.Inventory.Weapon2) == AttackResult.Success;
 
-        public AttackResult StartAttack(WeaponItem weapon)
+        public AttackResult StartAttack(WeaponItem weapon) => StartAttack(Player, weapon);
+        public AttackResult StartAttack(Character attacker, WeaponItem weapon)
         {
-            var result = GetAttackStartResult(weapon);
+            var result = GetAttackStartResult(attacker, weapon);
             if (result != AttackResult.Success) return result;
             var definition = weapon.Definition.Copy();
-            Stamina -= Math.Max(0m, definition.StaminaCost);
-            Rage -= Math.Max(0, definition.RageCost);
+            if (attacker == Player)
+            {
+                Stamina -= Math.Max(0m, definition.StaminaCost);
+                Rage -= Math.Max(0, definition.RageCost);
+            }
             var attack = new Attack
             {
                 Item = weapon,
-                Definition = definition
+                Definition = definition,
+                EnemyAttacker = attacker == Enemy,
+                Approaching = definition.Type == WeaponType.Melee
             };
             activeAttack = attack;
             weapon.CurrentStrikeIndex = 0;
             Emit(GameEventKind.AttackStarted, weapon: weapon);
             // Event subscribers may request cancellation; the first strike still runs.
             if (activeAttack != attack) return AttackResult.Success;
-            BeginStrike(attack);
+            if (!attack.Approaching) BeginStrike(attack);
             AdvanceAttackAndItems(0m);
             return AttackResult.Success;
         }
@@ -162,6 +182,7 @@ namespace Biosplit.Game
                 activeAttack = null;
                 attack.Item.CurrentStrikeIndex = -1;
                 attack.Item.BeginCooldown(attack.Definition.CooldownMs);
+                if (attack.Definition.Type == WeaponType.Melee) separating = HeroPos != settings.HeroPos || EnemyMeleePos != settings.EnemyMeleePos;
             }
             Emit(GameEventKind.AttackCancelled, weapon: attack.Item);
             if (isInterrupt) Emit(GameEventKind.AttackCompleted, attack.DamageDealt, weapon: attack.Item);
@@ -173,6 +194,7 @@ namespace Biosplit.Game
             activeAttack = null;
             attack.Item.CurrentStrikeIndex = -1;
             attack.Item.BeginCooldown(attack.Definition.CooldownMs);
+                if (attack.Definition.Type == WeaponType.Melee) separating = HeroPos != settings.HeroPos || EnemyMeleePos != settings.EnemyMeleePos;
             Emit(GameEventKind.AttackCompleted, attack.DamageDealt, weapon: attack.Item);
         }
         private static decimal StrikeDuration(StrikeSettings strike)
@@ -187,7 +209,7 @@ namespace Biosplit.Game
             attack.Remaining = StrikeDuration(strike);
             attack.UntilDamage = Math.Max(0, strike.WindupMs) / 1000m;
             attack.DamageApplied = false;
-            Emit(attack.Definition.Type == WeaponType.Melee ? GameEventKind.Punch : GameEventKind.Shot, weapon: attack.Item);
+            if (!attack.EnemyAttacker) Emit(attack.Definition.Type == WeaponType.Melee ? GameEventKind.Punch : GameEventKind.Shot, weapon: attack.Item);
         }
 
         private void FinishStrike(Attack attack)
@@ -207,6 +229,17 @@ namespace Biosplit.Game
             attack.DamageApplied = true;
             var strike = attack.Definition.Striker[attack.Item.CurrentStrikeIndex];
             int damage = strike.CalculateDamage(attack.Definition.Damage);
+            if (attack.EnemyAttacker)
+            {
+                bool dodged = Dodging;
+                bool blocked = !dodged && Blocking;
+                int applied = dodged || blocked ? 0 : Math.Min(Health, damage);
+                Health -= applied;
+                attack.DamageDealt = (int)Math.Min(int.MaxValue, (long)attack.DamageDealt + applied);
+                Emit(GameEventKind.EnemyAttacked, applied, blocked, dodged);
+                if (GameOver) { CancelAttack(isInterrupt: true); Emit(GameEventKind.GameOver); }
+                return;
+            }
             attack.DamageDealt = (int)Math.Min(int.MaxValue, (long)attack.DamageDealt + Math.Min(EnemyHealth, damage));
             Rage = (int)Math.Min(MaxRage, (long)Rage + Math.Max(0, attack.Definition.RageBonus));
             if (damage > 0) HurtEnemy(damage);
@@ -223,6 +256,30 @@ namespace Biosplit.Game
                     AdvanceItemsAndStamina(seconds);
                     dodgeRemaining = Math.Max(0m, dodgeRemaining - seconds);
                     return killed;
+                }
+                if (attack.Approaching)
+                {
+                    decimal current = attack.EnemyAttacker ? EnemyMeleePos : HeroPos;
+                    decimal target = attack.EnemyAttacker ? HeroPos + settings.EnemyMeleeSize : EnemyMeleePos - settings.EnemyMeleeSize;
+                    if (Math.Abs(target - current) > 0.01m)
+                    {
+                        if (seconds == 0m) return killed;
+                        decimal speed = attack.EnemyAttacker ? settings.EnemySpeed : settings.HeroSpeed;
+                        decimal weight = Math.Min(1m, speed * seconds);
+                        decimal position = current + (target - current) * weight;
+                        AdvanceItemsAndStamina(seconds);
+                        dodgeRemaining = Math.Max(0m, dodgeRemaining - seconds);
+                        seconds = 0m;
+                        if (attack.EnemyAttacker) EnemyMeleePos = position;
+                        else HeroPos = position;
+                        if (Math.Abs(target - position) > 0.01m) return killed;
+                    }
+                    // Lerp approaches the target asymptotically; snap the final small gap.
+                    if (attack.EnemyAttacker) EnemyMeleePos = target;
+                    else HeroPos = target;
+                    attack.Approaching = false;
+                    BeginStrike(attack);
+                    continue;
                 }
                 decimal boundary = attack.DamageApplied ? attack.Remaining : attack.UntilDamage;
                 if (seconds == 0m && boundary > 0m) return killed;
@@ -244,7 +301,7 @@ namespace Biosplit.Game
         public bool Dodge()
         {
             if (!CanDodge) return false;
-            if (activeAttack?.Definition.Type == WeaponType.Melee) CancelAttack();
+            if (activeAttack != null && !activeAttack.EnemyAttacker && activeAttack.Definition.Type == WeaponType.Melee) CancelAttack();
             Stamina -= settings.DodgeStamina;
             dodgeRemaining = settings.DodgeTimeMs / 1000m;
             Emit(GameEventKind.Dodge);
@@ -256,7 +313,7 @@ namespace Biosplit.Game
             bool next = held && !GameOver;
             if (next == Blocking) return;
             Blocking = next;
-            if (Blocking) CancelAttack();
+            if (Blocking && activeAttack != null && !activeAttack.EnemyAttacker) CancelAttack();
             Emit(next ? GameEventKind.BlockStarted : GameEventKind.BlockEnded);
         }
 
@@ -303,6 +360,7 @@ namespace Biosplit.Game
         private void AdvanceItemsAndStamina(decimal seconds)
         {
             if (seconds <= 0m) return;
+            AdvanceSeparation(seconds);
             decimal meleeCooldown = 0m;
             var first = Player.Inventory.Weapon1;
             var second = Player.Inventory.Weapon2;
@@ -311,6 +369,19 @@ namespace Biosplit.Game
             AccumulateStamina(Math.Max(0m, seconds - meleeCooldown));
             foreach (var weapon in CarriedWeapons()) weapon.TickCooldown(seconds);
         }
+        private void AdvanceSeparation(decimal seconds)
+        {
+            if (!separating) return;
+            HeroPos = LerpTowards(HeroPos, settings.HeroPos, settings.HeroSpeed * seconds);
+            EnemyMeleePos = LerpTowards(EnemyMeleePos, settings.EnemyMeleePos, settings.EnemySpeed * seconds);
+            separating = HeroPos != settings.HeroPos || EnemyMeleePos != settings.EnemyMeleePos;
+        }
+        private static decimal LerpTowards(decimal position, decimal target, decimal weight)
+        {
+            decimal next = position + (target - position) * Math.Min(1m, Math.Max(0m, weight));
+            return Math.Abs(target - next) <= 0.01m ? target : next;
+        }
+
         private void AccumulateStamina(decimal seconds)
         {
             if (seconds <= 0m || Blocking || settings.StaminaGrow <= 0m || Stamina >= MaxStamina) return;
