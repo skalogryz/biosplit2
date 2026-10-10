@@ -145,8 +145,8 @@ public class Main : Node2D
 	private void Render()
 	{
 		background.ScrollOffset = backgroundOrigin + new Vector2(-scroll, 0);
-		player.Position = playerOrigin + new Vector2(game.Dodging ? -90 : pose > 0 ? 22 : 0, 0);
-		enemy.Position = enemyOrigin + new Vector2(enemyPose > 0 ? -25 : 0, 0);
+		player.Position = new Vector2((float)game.HeroPos + (game.Dodging ? -90 : 0), playerOrigin.y);
+		enemy.Position = new Vector2((float)game.EnemyMeleePos, enemyOrigin.y);
 		player.Modulate = DamageFlashEnabled && flash > 0 ? new Color("ff7777") : playerColor;
 		SetAnimation(player, game.GameOver ? "defeat" : game.Blocking ? "block" : pose > 0 ? playerAction : game.Dodging ? "dodge" : flash > 0 ? "hurt" : "idle");
 		enemy.Modulate = DamageFlashEnabled && enemyFlash > 0 ? new Color("ff7777") : enemyColor;
