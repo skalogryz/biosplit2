@@ -46,12 +46,12 @@ namespace Biosplit.Game
         public GameSession(GameSettings settings)
         {
             this.settings = (settings ?? throw new ArgumentNullException(nameof(settings))).NormalizedCopy();
-            Health = this.settings.MaxHealth;
-            EnemyHealth = this.settings.EnemyHealth;
             Player = new Character("hero");
             characters.Add(Player);
             Enemy = new Character("enemy");
             characters.Add(Enemy);
+            Health = this.settings.MaxHealth;
+            EnemyHealth = this.settings.EnemyHealth;
             Enemy.Inventory.Weapon1 = new WeaponItem(new WeaponSettings("enemy_melee") { Type = WeaponType.Melee, Damage = this.settings.EnemyDamage });
             HeroPos = this.settings.HeroPos;
             EnemyMeleePos = this.settings.EnemyMeleePos;
@@ -62,10 +62,26 @@ namespace Biosplit.Game
 
         public Character Player { get; }
         public Character Enemy { get; }
-        public int Health { get; private set; }
-        public int Rage { get; private set; }
-        public decimal Stamina { get; private set; }
-        public int EnemyHealth { get; private set; }
+        public int Health
+        {
+            get => Player.health;
+            private set => Player.health = value;
+        }
+        public int Rage
+        {
+            get => Player.rage;
+            private set => Player.rage = value;
+        }
+        public decimal Stamina
+        {
+            get => Player.stamina;
+            private set => Player.stamina = value;
+        }
+        public int EnemyHealth
+        {
+            get => Enemy.health;
+            private set => Enemy.health = value;
+        }
         public int Wave { get; private set; } = 1;
         public long Coins { get; private set; }
         public int Kits { get; private set; } = 2;

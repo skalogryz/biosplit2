@@ -4,6 +4,9 @@ namespace Biosplit.Game
     {
         public Character(string name) { Name = name; }
 
+        public int health;
+        public decimal stamina;
+        public int rage;
         public string Name { get; }
         public CharacterInventory Inventory { get; } = new CharacterInventory();
     }
