@@ -15,7 +15,7 @@ namespace Biosplit.Game
         public IReadOnlyDictionary<string, WeaponSettings> Weapons { get; private set; }
         internal void RegisterWeapon(WeaponSettings weapon) { weapons[weapon.Name] = weapon; }
 
-        public int MovementDurationMs { get; set; } = 200;
+        public int MovementDurationMs { get; set; } = 150;
         public int MovementAccelerationMs { get; set; } = 50;
         public int MovementDecelerationMs { get; set; } = 30;
         public decimal HeroPos { get; set; } = 360m;
