@@ -16,12 +16,18 @@ namespace Biosplit.Game
             try
             {
                 var ini = IniDocument.Load(path);
-                int damage = ini.GetInt("zombie", "damage", game.EnemyDamage);
-                if (damage >= 0) game.EnemyDamage = damage;
-                int health = ini.GetInt("zombie", "health", game.EnemyHealth);
-                if (health > 0) game.EnemyHealth = health;
-                if (ini.TryGetInt("zombie", "cooldown", out int milliseconds) && milliseconds > 0)
-                    game.EnemyAttackInterval = milliseconds / 1000m;
+                foreach (string section in ini.SectionNames)
+                {
+                    if (string.IsNullOrWhiteSpace(section)) continue;
+                    var enemy = game.Enemies.TryGetValue(section, out var existing) ? existing.Copy() : new EnemySettings(section);
+                    int damage = ini.GetInt(section, "damage", enemy.Damage);
+                    if (damage >= 0) enemy.Damage = damage;
+                    int health = ini.GetInt(section, "health", enemy.Health);
+                    if (health > 0) enemy.Health = health;
+                    if (ini.TryGetInt(section, "cooldown", out int milliseconds) && milliseconds > 0)
+                        enemy.CooldownMs = milliseconds;
+                    game.RegisterEnemy(enemy);
+                }
             }
             catch (Exception error) when (error is IOException || error is UnauthorizedAccessException)
             {

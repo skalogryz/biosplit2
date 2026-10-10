@@ -43,16 +43,17 @@ namespace Biosplit.Game
             : activeAttack.Definition.Striker[activeAttack.Item.CurrentStrikeIndex].Copy();
         public event EventHandler<GameEvent> Changed;
 
-        public GameSession(GameSettings settings)
+        public GameSession(GameSettings settings, string enemyName = "zombie")
         {
             this.settings = (settings ?? throw new ArgumentNullException(nameof(settings))).NormalizedCopy();
             Player = new Character("hero");
             characters.Add(Player);
-            Enemy = new Character("enemy");
+            if (!this.settings.Enemies.TryGetValue(enemyName, out var enemySettings))
+                throw new ArgumentException("Unknown enemy: " + enemyName, nameof(enemyName));
+            Enemy = Character.AllocEnemy(enemySettings);
             characters.Add(Enemy);
             Health = this.settings.MaxHealth;
-            EnemyHealth = this.settings.EnemyHealth;
-            Enemy.Inventory.Weapon1 = new WeaponItem(new WeaponSettings("enemy_melee") { Type = WeaponType.Melee, Damage = this.settings.EnemyDamage });
+            Enemy.Inventory.Weapon1 = new WeaponItem(new WeaponSettings("enemy_melee") { Type = WeaponType.Melee, Damage = Enemy.EnemySettings.Damage });
             HeroPos = this.settings.HeroPos;
             EnemyMeleePos = this.settings.EnemyMeleePos;
             Characters = characters.AsReadOnly();
@@ -97,14 +98,14 @@ namespace Biosplit.Game
         public int MaxHealth => settings.MaxHealth;
         public int MaxRage => settings.MaxRage;
         public decimal MaxStamina => settings.MaxStamina;
-        public int EnemyMaxHealth => settings.EnemyHealth;
+        public int EnemyMaxHealth => Enemy.EnemySettings.Health;
         public int RagePointStep => Math.Max(1, MaxRage / 10);
         public int RagePerPunch => Math.Max(0, Player.Inventory.Weapon1?.Definition.RageBonus ?? 0);
         public int ShotCost => Math.Max(0, Player.Inventory.Weapon2?.Definition.RageCost ?? 0);
         public WeaponType PunchWeaponType => Player.Inventory.Weapon1?.Definition.Type ?? WeaponType.None;
         public WeaponType ShotWeaponType => Player.Inventory.Weapon2?.Definition.Type ?? WeaponType.None;
         public decimal DodgeRemaining => dodgeRemaining;
-        public bool EnemyWarning => EnemyHealth > 0 && enemyClock >= settings.EnemyAttackInterval - settings.EnemyWarningTime;
+        public bool EnemyWarning => EnemyHealth > 0 && enemyClock >= Enemy.EnemySettings.AttackInterval - Enemy.EnemySettings.WarningTime;
         public void AddCharacter(Character character)
         {
             if (character == null) throw new ArgumentNullException(nameof(character));
@@ -150,14 +151,14 @@ namespace Biosplit.Game
                 if (respawnRemaining <= 0m)
                 {
                     Wave++;
-                    EnemyHealth = settings.EnemyHealth;
+                    EnemyHealth = Enemy.EnemySettings.Health;
                     enemyClock = 0m;
                     Emit(GameEventKind.EnemySpawned);
                 }
                 return;
             }
             if (IsAttacking || separating) return;
-            if (seconds < settings.EnemyAttackInterval - enemyClock)
+            if (seconds < Enemy.EnemySettings.AttackInterval - enemyClock)
             {
                 enemyClock += seconds;
                 return;
