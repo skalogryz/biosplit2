@@ -53,28 +53,74 @@ namespace Biosplit.Game
             var strikes = new List<StrikeSettings>();
             for (int index = 0; ; index++)
             {
-                string key = "strike" + index.ToString(CultureInfo.InvariantCulture);
+                string number = index.ToString(CultureInfo.InvariantCulture);
+                string key = "strike" + number;
                 string value = ini.GetString(section, key);
-                if (value == null) break;
-                string[] parts = value.Split(',');
-                if (parts.Length != 3
-                    || !int.TryParse(parts[0], NumberStyles.Integer, CultureInfo.InvariantCulture, out int windup)
-                    || !int.TryParse(parts[1], NumberStyles.Integer, CultureInfo.InvariantCulture, out int recovery)
-                    || windup < 0 || recovery < 0 || string.IsNullOrWhiteSpace(parts[2]))
+                string framedKey = "fstrike" + number;
+                string framedValue = ini.GetString(section, framedKey);
+                if (value == null && framedValue == null) break;
+                if (value != null && framedValue != null)
                 {
-                    warning?.Invoke("Invalid [" + section + "] " + key + ": expected windupMs,recoveryMs,name. Strike sequence stopped.");
+                    warning?.Invoke("Invalid [" + section + "]: " + key + " and " + framedKey + " use the same strike index. Strike sequence stopped.");
+                    break;
+                }
+                if (framedValue != null)
+                {
+                    var framed = ReadFramedStrike(framedValue);
+                    if (framed == null)
+                    {
+                        warning?.Invoke("Invalid [" + section + "] " + framedKey + ": expected optional positive FPS, frame names and exactly one * marker. Strike sequence stopped.");
+                        break;
+                    }
+                    strikes.Add(framed);
+                    continue;
+                }
+                string[] parts = value.Split(',');
+                int recovery = -1;
+                if ((parts.Length != 2 && parts.Length != 3)
+                    || !int.TryParse(parts[0], NumberStyles.Integer, CultureInfo.InvariantCulture, out int windup)
+                    || windup < 0
+                    || (parts.Length == 3 && (!int.TryParse(parts[1], NumberStyles.Integer, CultureInfo.InvariantCulture, out recovery) || recovery < 0))
+                    || string.IsNullOrWhiteSpace(parts[parts.Length - 1]))
+                {
+                    warning?.Invoke("Invalid [" + section + "] " + key + ": expected windupMs,name or windupMs,recoveryMs,name. Strike sequence stopped.");
                     break;
                 }
                 strikes.Add(new StrikeSettings
                 {
                     WindupMs = windup,
                     RecoveryMs = recovery,
-                    Name = parts[2].Trim(),
+                    Name = parts[parts.Length - 1].Trim(),
                     DamageDurationMs = 25,
                     DamageModifier = 1m
                 });
             }
             return strikes.ToArray();
+        }
+
+        private static StrikeSettings ReadFramedStrike(string value)
+        {
+            string[] parts = value.Split(',');
+            decimal fps = 10m;
+            int start = 0;
+            if (decimal.TryParse(parts[0].Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out decimal explicitFps))
+            {
+                if (explicitFps <= 0m) return null;
+                fps = explicitFps;
+                start = 1;
+            }
+            var frames = new string[parts.Length - start];
+            int markers = 0;
+            for (int i = start; i < parts.Length; i++)
+            {
+                string frame = parts[i].Trim();
+                if (frame.Length == 0) return null;
+                if (frame == "*") markers++;
+                frames[i - start] = frame;
+            }
+            if (markers != 1) return null;
+            // Animation creation and phase timing are left to a future Godot normalization step.
+            return new StrikeSettings { FrameNames = frames, FramesPerSecond = fps, DamageDurationMs = 25 };
         }
 
         private static WeaponType ReadType(IniDocument ini, string section, WeaponType fallback)

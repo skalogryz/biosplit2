@@ -12,6 +12,10 @@ namespace Biosplit.Game
         public int RecoveryMs { get; set; }
         public decimal DamageModifier { get; set; } = 1m;
         public int AbsoluteDamage { get; set; }
+        // Raw framed-strike description. "*" is the damage marker, not a sprite frame.
+        public string[] FrameNames { get; set; }
+        public decimal FramesPerSecond { get; set; } = 10m;
+        public bool IsFramed => FrameNames != null;
 
         // Fractional damage is rounded down; damage cannot be negative.
         public int CalculateDamage(int weaponDamage)
@@ -22,6 +26,11 @@ namespace Biosplit.Game
             return (int)(weaponDamage * DamageModifier);
         }
 
-        internal StrikeSettings Copy() => (StrikeSettings)MemberwiseClone();
+        internal StrikeSettings Copy()
+        {
+            var copy = (StrikeSettings)MemberwiseClone();
+            copy.FrameNames = FrameNames == null ? null : (string[])FrameNames.Clone();
+            return copy;
+        }
     }
 }
