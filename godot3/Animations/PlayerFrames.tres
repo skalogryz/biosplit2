@@ -15,20 +15,20 @@
 
 [resource]
 animations = [ {
-"frames": [ ExtResource( 2 ) ],
+"frames": [ ExtResource( 10 ), ExtResource( 10 ), ExtResource( 2 ), ExtResource( 7 ) ],
 "loop": false,
 "name": "attack",
-"speed": 8.0
+"speed": 10.0
 }, {
-"frames": [ ExtResource( 7 ), ExtResource( 8 ), ExtResource( 9 ) ],
-"loop": true,
+"frames": [ ExtResource( 8 ), ExtResource( 9 ), ExtResource( 9 ) ],
+"loop": false,
 "name": "attack2",
-"speed": 5.0
+"speed": 10.0
 }, {
-"frames": [ ExtResource( 10 ), ExtResource( 6 ), ExtResource( 11 ), ExtResource( 12 ) ],
-"loop": true,
+"frames": [ ExtResource( 10 ), ExtResource( 10 ), ExtResource( 6 ), ExtResource( 12 ), ExtResource( 11 ) ],
+"loop": false,
 "name": "attack3",
-"speed": 5.0
+"speed": 10.0
 }, {
 "frames": [ ExtResource( 4 ) ],
 "loop": true,
