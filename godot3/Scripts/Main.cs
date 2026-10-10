@@ -169,7 +169,21 @@ public class Main : Node2D
 			meleeAttackWeapon = null;
 		switch (action.Kind)
 		{
-			case GameEventKind.Punch:
+			case GameEventKind.ApproachStarted:
+                message = (action.Attacker == game.Enemy ? "Враг" : "Герой") + ": началось сближение.";
+                break;
+            case GameEventKind.SeparationStarted:
+                message = (action.Attacker == game.Enemy ? "Враг" : "Герой") + ": начался отход.";
+                break;
+            case GameEventKind.SeparationCompleted:
+                message = (action.Attacker == game.Enemy ? "Враг" : "Герой") + ": закончился отход.";
+                break;
+            case GameEventKind.StrikeStarted:
+                message = (action.Attacker == game.Enemy ? "Враг" : "Герой") + ": начался страйк "
+                    + (string.IsNullOrEmpty(action.StrikeName) ? "#" + action.StrikeIndex : action.StrikeName)
+                    + " (" + action.Weapon.Definition.Name + ", индекс " + action.StrikeIndex + ").";
+                break;
+            case GameEventKind.Punch:
 				targetScroll += Mathf.Max(0, ScrollPerPunch);
 				shootingPose = false;
 				StartPlayerAnimation(StrikeAnimation(action, "attack"));
