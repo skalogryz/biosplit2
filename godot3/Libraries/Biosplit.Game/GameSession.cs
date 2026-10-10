@@ -15,6 +15,9 @@ namespace Biosplit.Game
             public WeaponItem Item;
             public bool EnemyAttacker;
             public bool Approaching;
+            public decimal MovementElapsed;
+            public decimal MovementStart;
+            public decimal MovementTarget;
             public WeaponSettings Definition;
             public decimal Remaining;
             public decimal UntilDamage;
@@ -25,6 +28,7 @@ namespace Biosplit.Game
         private Attack activeAttack;
         private bool separating;
         private Attack separatingAttack;
+        private decimal separationElapsed, separationHeroStart, separationEnemyStart;
         public bool IsApproaching => activeAttack?.Approaching ?? false;
         public bool IsSeparating => separating;
         public decimal HeroPos { get; private set; }
@@ -160,7 +164,9 @@ namespace Biosplit.Game
                 Item = weapon,
                 Definition = definition,
                 EnemyAttacker = attacker == Enemy,
-                Approaching = definition.Type == WeaponType.Melee
+                Approaching = definition.Type == WeaponType.Melee,
+                MovementStart = attacker == Enemy ? EnemyMeleePos : HeroPos,
+                MovementTarget = attacker == Enemy ? HeroPos + settings.EnemyMeleeSize : EnemyMeleePos - settings.EnemyMeleeSize
             };
             activeAttack = attack;
             weapon.CurrentStrikeIndex = 0;
@@ -264,24 +270,18 @@ namespace Biosplit.Game
                 }
                 if (attack.Approaching)
                 {
-                    decimal current = attack.EnemyAttacker ? EnemyMeleePos : HeroPos;
-                    decimal target = attack.EnemyAttacker ? HeroPos + settings.EnemyMeleeSize : EnemyMeleePos - settings.EnemyMeleeSize;
-                    if (Math.Abs(target - current) > 0.01m)
-                    {
-                        if (seconds == 0m) return killed;
-                        decimal speed = attack.EnemyAttacker ? settings.EnemySpeed : settings.HeroSpeed;
-                        decimal weight = Math.Min(1m, speed * seconds);
-                        decimal position = current + (target - current) * weight;
-                        AdvanceItemsAndStamina(seconds);
-                        dodgeRemaining = Math.Max(0m, dodgeRemaining - seconds);
-                        seconds = 0m;
-                        if (attack.EnemyAttacker) EnemyMeleePos = position;
-                        else HeroPos = position;
-                        if (Math.Abs(target - position) > 0.01m) return killed;
-                    }
-                    // Lerp approaches the target asymptotically; snap the final small gap.
-                    if (attack.EnemyAttacker) EnemyMeleePos = target;
-                    else HeroPos = target;
+                    decimal duration = settings.MovementDurationMs / 1000m;
+                    decimal approachElapsed = attack.MovementStart == attack.MovementTarget ? 0m
+                        : Math.Min(seconds, duration - attack.MovementElapsed);
+                    AdvanceItemsAndStamina(approachElapsed);
+                    dodgeRemaining = Math.Max(0m, dodgeRemaining - approachElapsed);
+                    seconds -= approachElapsed;
+                    attack.MovementElapsed += approachElapsed;
+                    decimal progress = attack.MovementStart == attack.MovementTarget ? 1m : MovementProgress(attack.MovementElapsed);
+                    decimal position = attack.MovementStart + (attack.MovementTarget - attack.MovementStart) * progress;
+                    if (attack.EnemyAttacker) EnemyMeleePos = position;
+                    else HeroPos = position;
+                    if (progress < 1m) return killed;
                     attack.Approaching = false;
                     BeginStrike(attack);
                     continue;
@@ -315,7 +315,7 @@ namespace Biosplit.Game
 
         public void SetBlocking(bool held)
         {
-            bool next = held && !GameOver;
+            bool next = held && !GameOver && !Dodging;
             if (next == Blocking) return;
             Blocking = next;
             if (Blocking && activeAttack != null && !activeAttack.EnemyAttacker) CancelAttack();
@@ -386,14 +386,19 @@ namespace Biosplit.Game
             separating = HeroPos != settings.HeroPos || EnemyMeleePos != settings.EnemyMeleePos;
             if (!separating) return;
             separatingAttack = attack;
+            separationElapsed = 0m;
+            separationHeroStart = HeroPos;
+            separationEnemyStart = EnemyMeleePos;
             EmitAttackEvent(GameEventKind.SeparationStarted, attack);
         }
 
         private void AdvanceSeparation(decimal seconds)
         {
             if (!separating) return;
-            HeroPos = LerpTowards(HeroPos, settings.HeroPos, settings.HeroSpeed * seconds);
-            EnemyMeleePos = LerpTowards(EnemyMeleePos, settings.EnemyMeleePos, settings.EnemySpeed * seconds);
+            separationElapsed += seconds;
+            decimal progress = MovementProgress(separationElapsed);
+            HeroPos = separationHeroStart + (settings.HeroPos - separationHeroStart) * progress;
+            EnemyMeleePos = separationEnemyStart + (settings.EnemyMeleePos - separationEnemyStart) * progress;
             separating = HeroPos != settings.HeroPos || EnemyMeleePos != settings.EnemyMeleePos;
             if (!separating)
             {
@@ -402,12 +407,24 @@ namespace Biosplit.Game
                 EmitAttackEvent(GameEventKind.SeparationCompleted, finished);
             }
         }
-        private static decimal LerpTowards(decimal position, decimal target, decimal weight)
+        // Integral of a trapezoidal velocity profile: accelerate, cruise, decelerate.
+        private decimal MovementProgress(decimal seconds)
         {
-            decimal next = position + (target - position) * Math.Min(1m, Math.Max(0m, weight));
-            return Math.Abs(target - next) <= 0.01m ? target : next;
+            decimal duration = settings.MovementDurationMs;
+            decimal time = Math.Max(0m, seconds * 1000m);
+            if (time >= duration) return 1m;
+            decimal acceleration = settings.MovementAccelerationMs;
+            decimal deceleration = settings.MovementDecelerationMs;
+            decimal area = duration - (acceleration + deceleration) / 2m;
+            if (acceleration > 0m && time < acceleration)
+                return time * time / (2m * acceleration * area);
+            if (deceleration > 0m && time > duration - deceleration)
+            {
+                decimal remaining = duration - time;
+                return 1m - remaining * remaining / (2m * deceleration * area);
+            }
+            return (time - acceleration / 2m) / area;
         }
-
         private void AccumulateStamina(decimal seconds)
         {
             if (seconds <= 0m || Blocking || settings.StaminaGrow <= 0m || Stamina >= MaxStamina) return;

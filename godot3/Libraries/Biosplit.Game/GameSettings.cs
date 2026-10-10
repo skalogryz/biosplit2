@@ -15,12 +15,11 @@ namespace Biosplit.Game
         public IReadOnlyDictionary<string, WeaponSettings> Weapons { get; private set; }
         internal void RegisterWeapon(WeaponSettings weapon) { weapons[weapon.Name] = weapon; }
 
+        public int MovementDurationMs { get; set; } = 200;
+        public int MovementAccelerationMs { get; set; } = 50;
+        public int MovementDecelerationMs { get; set; } = 30;
         public decimal HeroPos { get; set; } = 360m;
-        // Lerp coefficient for approach and return: weight = coefficient * deltaSeconds.
-        public decimal HeroSpeed { get; set; } = 20m;
         public decimal EnemyMeleePos { get; set; } = 530m;
-        // Lerp coefficient for enemy approach and return.
-        public decimal EnemySpeed { get; set; } = 20m;
         public decimal EnemyMeleeSize { get; set; } = 80m;
         public int MaxHealth { get; set; } = 100;
         public int MaxRage { get; set; } = 100;
@@ -39,8 +38,9 @@ namespace Biosplit.Game
             copy.weapons = new Dictionary<string, WeaponSettings>(StringComparer.OrdinalIgnoreCase);
             foreach (var entry in weapons) copy.weapons.Add(entry.Key, entry.Value.Copy());
             copy.Weapons = new ReadOnlyDictionary<string, WeaponSettings>(copy.weapons);
-            copy.HeroSpeed = Math.Max(0.001m, HeroSpeed);
-            copy.EnemySpeed = Math.Max(0.001m, EnemySpeed);
+            copy.MovementDurationMs = Math.Max(1, MovementDurationMs);
+            copy.MovementAccelerationMs = Math.Min(copy.MovementDurationMs, Math.Max(0, MovementAccelerationMs));
+            copy.MovementDecelerationMs = Math.Min(copy.MovementDurationMs - copy.MovementAccelerationMs, Math.Max(0, MovementDecelerationMs));
             copy.EnemyMeleeSize = Math.Max(0m, EnemyMeleeSize);
             copy.MaxHealth = Math.Max(1, MaxHealth);
             copy.MaxRage = Math.Max(1, MaxRage);
