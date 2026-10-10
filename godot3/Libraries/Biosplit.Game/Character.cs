@@ -7,6 +7,7 @@ namespace Biosplit.Game
         public int health;
         public decimal stamina;
         public int rage;
+        public bool blocking;
         public string Name { get; }
         public CharacterInventory Inventory { get; } = new CharacterInventory();
     }

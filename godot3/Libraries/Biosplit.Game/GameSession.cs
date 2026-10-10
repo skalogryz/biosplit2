@@ -85,7 +85,11 @@ namespace Biosplit.Game
         public int Wave { get; private set; } = 1;
         public long Coins { get; private set; }
         public int Kits { get; private set; } = 2;
-        public bool Blocking { get; private set; }
+        public bool Blocking
+        {
+            get => Player.blocking;
+            private set => Player.blocking = value;
+        }
         public bool Dodging => dodgeRemaining > 0m;
         public bool GameOver => Health == 0;
         public bool InventoryOpen { get; private set; }
