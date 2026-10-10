@@ -64,7 +64,9 @@ public class Main : Node2D
 	{
 		var settings = CreateSettings();
 		GameConfiguration.Load(System.IO.Path.GetDirectoryName(OS.GetExecutablePath()), settings, text => GD.PushWarning(text));
-		ApplySettings(settings);
+		player = GetNode<AnimatedSprite>("Combatants/Player");
+        WeaponAnimationNormalizer.Normalize(settings, player);
+        ApplySettings(settings);
 		game = new GameSession(settings);
 		MaxHealth = game.MaxHealth;
 		MaxRage = game.MaxRage;
@@ -73,7 +75,7 @@ public class Main : Node2D
 		background = GetNode<ParallaxBackground>("Background");
 		panorama = GetNode<ParallaxLayer>("Background/Panorama");
 		backgroundOrigin = background.ScrollOffset;
-		player = GetNode<AnimatedSprite>("Combatants/Player");
+
 		enemy = GetNode<AnimatedSprite>("Combatants/Enemy");
 		shotTrail = GetNode<Line2D>("Combatants/ShotTrail");
 		playerOrigin = player.Position;
