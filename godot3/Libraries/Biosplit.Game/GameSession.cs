@@ -24,6 +24,7 @@ namespace Biosplit.Game
         }
         private Attack activeAttack;
         private bool separating;
+        private Attack separatingAttack;
         public bool IsApproaching => activeAttack?.Approaching ?? false;
         public bool IsSeparating => separating;
         public decimal HeroPos { get; private set; }
@@ -166,6 +167,8 @@ namespace Biosplit.Game
             Emit(GameEventKind.AttackStarted, weapon: weapon);
             // Event subscribers may request cancellation; the first strike still runs.
             if (activeAttack != attack) return AttackResult.Success;
+            if (attack.Approaching) EmitAttackEvent(GameEventKind.ApproachStarted, attack);
+            if (activeAttack != attack) return AttackResult.Success;
             if (!attack.Approaching) BeginStrike(attack);
             AdvanceAttackAndItems(0m);
             return AttackResult.Success;
@@ -182,7 +185,7 @@ namespace Biosplit.Game
                 activeAttack = null;
                 attack.Item.CurrentStrikeIndex = -1;
                 attack.Item.BeginCooldown(attack.Definition.CooldownMs);
-                if (attack.Definition.Type == WeaponType.Melee) separating = HeroPos != settings.HeroPos || EnemyMeleePos != settings.EnemyMeleePos;
+                BeginSeparation(attack);
             }
             Emit(GameEventKind.AttackCancelled, weapon: attack.Item);
             if (isInterrupt) Emit(GameEventKind.AttackCompleted, attack.DamageDealt, weapon: attack.Item);
@@ -194,7 +197,7 @@ namespace Biosplit.Game
             activeAttack = null;
             attack.Item.CurrentStrikeIndex = -1;
             attack.Item.BeginCooldown(attack.Definition.CooldownMs);
-                if (attack.Definition.Type == WeaponType.Melee) separating = HeroPos != settings.HeroPos || EnemyMeleePos != settings.EnemyMeleePos;
+                BeginSeparation(attack);
             Emit(GameEventKind.AttackCompleted, attack.DamageDealt, weapon: attack.Item);
         }
         private static decimal StrikeDuration(StrikeSettings strike)
@@ -209,6 +212,8 @@ namespace Biosplit.Game
             attack.Remaining = StrikeDuration(strike);
             attack.UntilDamage = Math.Max(0, strike.WindupMs) / 1000m;
             attack.DamageApplied = false;
+            EmitAttackEvent(GameEventKind.StrikeStarted, attack);
+            if (activeAttack != attack) return;
             if (!attack.EnemyAttacker) Emit(attack.Definition.Type == WeaponType.Melee ? GameEventKind.Punch : GameEventKind.Shot, weapon: attack.Item);
         }
 
@@ -369,12 +374,33 @@ namespace Biosplit.Game
             AccumulateStamina(Math.Max(0m, seconds - meleeCooldown));
             foreach (var weapon in CarriedWeapons()) weapon.TickCooldown(seconds);
         }
+        private void EmitAttackEvent(GameEventKind kind, Attack attack)
+            => Changed?.Invoke(this, new GameEvent(kind, weapon: attack.Item,
+                attacker: attack.EnemyAttacker ? Enemy : Player,
+                strikeIndex: attack.Item.CurrentStrikeIndex,
+                strikeName: attack.Item.CurrentStrikeIndex < 0 ? null : attack.Definition.Striker[attack.Item.CurrentStrikeIndex].Name));
+
+        private void BeginSeparation(Attack attack)
+        {
+            if (attack.Definition.Type != WeaponType.Melee || separating) return;
+            separating = HeroPos != settings.HeroPos || EnemyMeleePos != settings.EnemyMeleePos;
+            if (!separating) return;
+            separatingAttack = attack;
+            EmitAttackEvent(GameEventKind.SeparationStarted, attack);
+        }
+
         private void AdvanceSeparation(decimal seconds)
         {
             if (!separating) return;
             HeroPos = LerpTowards(HeroPos, settings.HeroPos, settings.HeroSpeed * seconds);
             EnemyMeleePos = LerpTowards(EnemyMeleePos, settings.EnemyMeleePos, settings.EnemySpeed * seconds);
             separating = HeroPos != settings.HeroPos || EnemyMeleePos != settings.EnemyMeleePos;
+            if (!separating)
+            {
+                var finished = separatingAttack;
+                separatingAttack = null;
+                EmitAttackEvent(GameEventKind.SeparationCompleted, finished);
+            }
         }
         private static decimal LerpTowards(decimal position, decimal target, decimal weight)
         {
