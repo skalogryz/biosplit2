@@ -14,6 +14,8 @@ namespace Biosplit.Game
         Dodging,
         InsufficientRage,
         InsufficientStamina,
-        NoStrikes
+        NoStrikes,
+        Separating,
+        UnsupportedAttacker
     }
 }
