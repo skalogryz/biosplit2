@@ -65,8 +65,8 @@ public class Main : Node2D
 		var settings = CreateSettings();
 		GameConfiguration.Load(System.IO.Path.GetDirectoryName(OS.GetExecutablePath()), settings, text => GD.PushWarning(text));
 		player = GetNode<AnimatedSprite>("Combatants/Player");
-        WeaponAnimationNormalizer.Normalize(settings, player);
-        ApplySettings(settings);
+		WeaponAnimationNormalizer.Normalize(settings, player, warning: text => GD.PushWarning(text));
+		ApplySettings(settings);
 		game = new GameSession(settings);
 		MaxHealth = game.MaxHealth;
 		MaxRage = game.MaxRage;
