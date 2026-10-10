@@ -170,20 +170,20 @@ public class Main : Node2D
 		switch (action.Kind)
 		{
 			case GameEventKind.ApproachStarted:
-                message = (action.Attacker == game.Enemy ? "Враг" : "Герой") + ": началось сближение.";
-                break;
-            case GameEventKind.SeparationStarted:
-                message = (action.Attacker == game.Enemy ? "Враг" : "Герой") + ": начался отход.";
-                break;
-            case GameEventKind.SeparationCompleted:
-                message = (action.Attacker == game.Enemy ? "Враг" : "Герой") + ": закончился отход.";
-                break;
-            case GameEventKind.StrikeStarted:
-                message = (action.Attacker == game.Enemy ? "Враг" : "Герой") + ": начался страйк "
-                    + (string.IsNullOrEmpty(action.StrikeName) ? "#" + action.StrikeIndex : action.StrikeName)
-                    + " (" + action.Weapon.Definition.Name + ", индекс " + action.StrikeIndex + ").";
-                break;
-            case GameEventKind.Punch:
+				message = (action.Attacker == game.Enemy ? "Враг" : "Герой") + ": началось сближение.";
+				break;
+			case GameEventKind.SeparationStarted:
+				message = (action.Attacker == game.Enemy ? "Враг" : "Герой") + ": начался отход.";
+				break;
+			case GameEventKind.SeparationCompleted:
+				message = (action.Attacker == game.Enemy ? "Враг" : "Герой") + ": закончился отход.";
+				break;
+			case GameEventKind.StrikeStarted:
+				message = (action.Attacker == game.Enemy ? "Враг" : "Герой") + ": начался страйк "
+					+ (string.IsNullOrEmpty(action.StrikeName) ? "#" + action.StrikeIndex : action.StrikeName)
+					+ " (" + action.Weapon.Definition.Name + ", индекс " + action.StrikeIndex + ").";
+				break;
+			case GameEventKind.Punch:
 				targetScroll += Mathf.Max(0, ScrollPerPunch);
 				shootingPose = false;
 				StartPlayerAnimation(StrikeAnimation(action, "attack"));
@@ -318,6 +318,7 @@ public class Main : Node2D
 		if (!key.Pressed || key.Echo) return;
 		switch ((KeyList)key.Scancode)
 		{
+			case KeyList.Space:
 			case KeyList.Slash: punchKeyHeld = true; Punch(); break;
 			case KeyList.Apostrophe: Shoot(); break;
 			case KeyList.A: Dodge(); break;
