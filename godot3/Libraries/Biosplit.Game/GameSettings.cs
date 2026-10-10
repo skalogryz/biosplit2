@@ -15,10 +15,13 @@ namespace Biosplit.Game
         {
             ["zombie"] = new EnemySettings("zombie")
         };
+        private Dictionary<string, WeaponSettings> enemyWeapons = new Dictionary<string, WeaponSettings>(StringComparer.OrdinalIgnoreCase);
+        public IReadOnlyDictionary<string, WeaponSettings> EnemyWeapons { get; private set; }
         public GameSettings()
         {
             Weapons = new ReadOnlyDictionary<string, WeaponSettings>(weapons);
             Enemies = new ReadOnlyDictionary<string, EnemySettings>(enemies);
+            EnemyWeapons = new ReadOnlyDictionary<string, WeaponSettings>(enemyWeapons);
         }
         public IReadOnlyDictionary<string, EnemySettings> Enemies { get; private set; }
         internal void RegisterEnemy(EnemySettings enemy) { enemies[enemy.Name] = enemy; }
@@ -42,7 +45,7 @@ namespace Biosplit.Game
         public decimal EnemyAttackInterval { get => enemies["zombie"].AttackInterval; set => enemies["zombie"].AttackInterval = value; }
         public decimal EnemyWarningTime { get => enemies["zombie"].WarningTime; set => enemies["zombie"].WarningTime = value; }
 
-        internal GameSettings NormalizedCopy()
+        public GameSettings NormalizedCopy()
         {
             var copy = (GameSettings)MemberwiseClone();
             copy.weapons = new Dictionary<string, WeaponSettings>(StringComparer.OrdinalIgnoreCase);
@@ -51,6 +54,18 @@ namespace Biosplit.Game
             copy.enemies = new Dictionary<string, EnemySettings>(StringComparer.OrdinalIgnoreCase);
             foreach (var entry in enemies) copy.enemies.Add(entry.Key, entry.Value.NormalizedCopy());
             copy.Enemies = new ReadOnlyDictionary<string, EnemySettings>(copy.enemies);
+            copy.enemyWeapons = new Dictionary<string, WeaponSettings>(StringComparer.OrdinalIgnoreCase);
+            foreach (var entry in copy.enemies)
+            {
+                var enemy = entry.Value;
+                copy.enemyWeapons.Add(entry.Key, new WeaponSettings(enemy.Name)
+                {
+                    Type = WeaponType.Melee,
+                    Damage = enemy.Damage,
+                    CooldownMs = enemy.CooldownMs
+                });
+            }
+            copy.EnemyWeapons = new ReadOnlyDictionary<string, WeaponSettings>(copy.enemyWeapons);
             copy.MovementDurationMs = Math.Max(1, MovementDurationMs);
             copy.MovementAccelerationMs = Math.Min(copy.MovementDurationMs, Math.Max(0, MovementAccelerationMs));
             copy.MovementDecelerationMs = Math.Min(copy.MovementDurationMs - copy.MovementAccelerationMs, Math.Max(0, MovementDecelerationMs));

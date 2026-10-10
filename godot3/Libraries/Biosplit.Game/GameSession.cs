@@ -53,7 +53,7 @@ namespace Biosplit.Game
             Enemy = Character.AllocEnemy(enemySettings);
             characters.Add(Enemy);
             Health = this.settings.MaxHealth;
-            Enemy.Inventory.Weapon1 = new WeaponItem(new WeaponSettings("enemy_melee") { Type = WeaponType.Melee, Damage = Enemy.EnemySettings.Damage });
+            Enemy.Inventory.Weapon1 = new WeaponItem(this.settings.EnemyWeapons[enemyName]);
             HeroPos = this.settings.HeroPos;
             EnemyMeleePos = this.settings.EnemyMeleePos;
             Characters = characters.AsReadOnly();
