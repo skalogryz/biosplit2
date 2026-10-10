@@ -8,11 +8,14 @@ namespace Biosplit.Game
         public static Character AllocEnemy(EnemySettings settings)
         {
             if (settings == null) throw new System.ArgumentNullException(nameof(settings));
-            return new Character(settings.Name)
+            var character = new Character(settings.Name)
             {
                 EnemySettings = settings,
                 health = settings.Health
             };
+            if (settings.Weapon0Settings != null)
+                character.Inventory.Weapon1 = new WeaponItem(settings.Weapon0Settings);
+            return character;
         }
         public int health;
         public decimal stamina;

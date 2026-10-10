@@ -25,6 +25,7 @@ namespace Biosplit.Game
         }
         public IReadOnlyDictionary<string, EnemySettings> Enemies { get; private set; }
         internal void RegisterEnemy(EnemySettings enemy) { enemies[enemy.Name] = enemy; }
+        internal void RegisterEnemyWeapon(WeaponSettings weapon) { enemyWeapons[weapon.Name] = weapon; }
         public IReadOnlyDictionary<string, WeaponSettings> Weapons { get; private set; }
         internal void RegisterWeapon(WeaponSettings weapon) { weapons[weapon.Name] = weapon; }
 
@@ -55,15 +56,27 @@ namespace Biosplit.Game
             foreach (var entry in enemies) copy.enemies.Add(entry.Key, entry.Value.NormalizedCopy());
             copy.Enemies = new ReadOnlyDictionary<string, EnemySettings>(copy.enemies);
             copy.enemyWeapons = new Dictionary<string, WeaponSettings>(StringComparer.OrdinalIgnoreCase);
+            foreach (var weapon in enemyWeapons) copy.enemyWeapons.Add(weapon.Key, weapon.Value.Copy());
             foreach (var entry in copy.enemies)
             {
                 var enemy = entry.Value;
-                copy.enemyWeapons.Add(entry.Key, new WeaponSettings(enemy.Name)
+                if (!string.IsNullOrEmpty(enemy.Weapon0))
                 {
-                    Type = WeaponType.Melee,
-                    Damage = enemy.Damage,
-                    CooldownMs = enemy.CooldownMs
-                });
+                    if (!copy.enemyWeapons.TryGetValue(enemy.Weapon0, out var weapon))
+                        throw new InvalidOperationException("Unknown enemy weapon: " + enemy.Weapon0);
+                    enemy.Weapon0Settings = weapon;
+                }
+                else
+                {
+                    var weapon = new WeaponSettings(enemy.Name)
+                    {
+                        Type = WeaponType.Melee,
+                        Damage = enemy.Damage,
+                        CooldownMs = enemy.CooldownMs
+                    };
+                    copy.enemyWeapons[entry.Key] = weapon;
+                    enemy.Weapon0Settings = weapon;
+                }
             }
             copy.EnemyWeapons = new ReadOnlyDictionary<string, WeaponSettings>(copy.enemyWeapons);
             copy.MovementDurationMs = Math.Max(1, MovementDurationMs);

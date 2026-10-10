@@ -6,6 +6,8 @@ namespace Biosplit.Game
     {
         public EnemySettings(string name) { Name = name; }
         public string Name { get; }
+        public string Weapon0 { get; set; }
+        public WeaponSettings Weapon0Settings { get; internal set; }
         public int Health { get; set; } = 80;
         public int Damage { get; set; } = 15;
         public decimal AttackInterval { get; set; } = 2.4m;

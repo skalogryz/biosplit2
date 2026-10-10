@@ -24,22 +24,8 @@ namespace Biosplit.Game
                 foreach (string section in ini.SectionNames)
                 {
                     if (string.IsNullOrWhiteSpace(section)) continue;
-                    var weapon = game.Weapons.TryGetValue(section, out var existing)
-                        ? existing.Copy() : new WeaponSettings(section);
-                    weapon.Type = ReadType(ini, section, weapon.Type);
-                    int damage = ini.GetInt(section, "damage", weapon.Damage);
-                    if (damage >= 0) weapon.Damage = damage;
-                    int rageBonus = ini.GetInt(section, "ragebonus", weapon.RageBonus);
-                    if (rageBonus >= 0) weapon.RageBonus = rageBonus;
-                    int rageCost = ini.GetInt(section, "rage", weapon.RageCost);
-                    if (rageCost >= 0) weapon.RageCost = rageCost;
-                    decimal stamina = ini.GetDecimal(section, "stamina", weapon.StaminaCost);
-                    if (stamina >= 0m) weapon.StaminaCost = stamina;
-                    int cooldown = ini.GetInt(section, "cooldown", weapon.CooldownMs);
-                    if (cooldown >= 0) weapon.CooldownMs = cooldown;
-                    int attackDuration = ini.GetInt(section, "attackduration", weapon.AttackDurationMs);
-                    if (attackDuration >= 0) weapon.AttackDurationMs = attackDuration;
-                    weapon.Striker = ReadStrikes(ini, section, warning);
+                    game.Weapons.TryGetValue(section, out var existing);
+                    var weapon = ReadSection(ini, section, existing, warning);
                     game.RegisterWeapon(weapon);
                 }
             }
@@ -47,6 +33,25 @@ namespace Biosplit.Game
             {
                 warning?.Invoke("Cannot read " + Path.GetFileName(path) + ": " + error.Message);
             }
+        }
+        internal static WeaponSettings ReadSection(IniDocument ini, string section, WeaponSettings existing, Action<string> warning)
+        {
+            var weapon = existing?.Copy() ?? new WeaponSettings(section);
+            weapon.Type = ReadType(ini, section, weapon.Type);
+            int damage = ini.GetInt(section, "damage", weapon.Damage);
+            if (damage >= 0) weapon.Damage = damage;
+            int rageBonus = ini.GetInt(section, "ragebonus", weapon.RageBonus);
+            if (rageBonus >= 0) weapon.RageBonus = rageBonus;
+            int rageCost = ini.GetInt(section, "rage", weapon.RageCost);
+            if (rageCost >= 0) weapon.RageCost = rageCost;
+            decimal stamina = ini.GetDecimal(section, "stamina", weapon.StaminaCost);
+            if (stamina >= 0m) weapon.StaminaCost = stamina;
+            int cooldown = ini.GetInt(section, "cooldown", weapon.CooldownMs);
+            if (cooldown >= 0) weapon.CooldownMs = cooldown;
+            int attackDuration = ini.GetInt(section, "attackduration", weapon.AttackDurationMs);
+            if (attackDuration >= 0) weapon.AttackDurationMs = attackDuration;
+            weapon.Striker = ReadStrikes(ini, section, warning);
+            return weapon;
         }
         private static StrikeSettings[] ReadStrikes(IniDocument ini, string section, Action<string> warning)
         {
