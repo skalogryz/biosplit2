@@ -70,6 +70,7 @@ public class Main : Node2D
 		player = GetNode<AnimatedSprite>("Combatants/Player");
 		enemy = GetNode<AnimatedSprite>("Combatants/Enemy");
 		WeaponAnimationNormalizer.Normalize(settings, player, warning: text => GD.PushWarning(text));
+		WeaponAnimationNormalizer.NormalizeEnemyAnimations(settings.Enemies["zombie"], enemy, warning: text => GD.PushWarning(text));
 		WeaponAnimationNormalizer.Normalize(settings.EnemyWeapons.Values, enemy, warning: text => GD.PushWarning(text));
 		ApplySettings(settings);
 		game = new GameSession(settings);

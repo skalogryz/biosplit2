@@ -45,6 +45,52 @@ public static class WeaponAnimationNormalizer
         }
     }
 
+    public static void NormalizeEnemyAnimations(EnemySettings settings, AnimatedSprite actor,
+        string executableDirectory = null, Action<string> warning = null)
+    {
+        if (settings == null || !Godot.Object.IsInstanceValid(actor)) return;
+        var animations = new Dictionary<string, FrameAnimationSettings>
+        {
+            { "idle", settings.FIdle }, { "block", settings.FBlock }, { "hurt", settings.FHurt },
+            { "defeat", settings.FDefeat }, { "attack", settings.FAttack }
+        };
+        FrameLoader loader = null;
+        bool copiedFrames = false;
+        foreach (var pair in animations)
+        {
+            var animation = pair.Value;
+            if (animation == null) continue;
+            if (animation.FramesPerSecond <= 0m || animation.FrameNames == null || animation.FrameNames.Length == 0)
+            {
+                warning?.Invoke("Invalid enemy animation: " + settings.Name + " " + pair.Key);
+                continue;
+            }
+            if (loader == null) loader = new FrameLoader(executableDirectory ?? System.IO.Path.GetDirectoryName(OS.GetExecutablePath()), warning);
+            var textures = new List<Texture>();
+            foreach (string frame in animation.FrameNames)
+            {
+                Texture texture = loader.Load(frame);
+                if (texture == null)
+                {
+                    warning?.Invoke("Cannot create enemy animation " + settings.Name + " " + pair.Key + ": frame not found or ambiguous: " + frame);
+                    textures.Clear();
+                    break;
+                }
+                textures.Add(texture);
+            }
+            if (textures.Count == 0) continue;
+            if (!copiedFrames)
+            {
+                actor.Frames = Godot.Object.IsInstanceValid(actor.Frames) ? (SpriteFrames)actor.Frames.Duplicate() : new SpriteFrames();
+                copiedFrames = true;
+            }
+            if (actor.Frames.HasAnimation(pair.Key)) actor.Frames.RemoveAnimation(pair.Key);
+            actor.Frames.AddAnimation(pair.Key);
+            actor.Frames.SetAnimationSpeed(pair.Key, (float)animation.FramesPerSecond);
+            actor.Frames.SetAnimationLoop(pair.Key, pair.Key == "idle" || pair.Key == "block");
+            foreach (var texture in textures) actor.Frames.AddFrame(pair.Key, texture);
+        }
+    }
     private static void CreateFramedAnimation(string weaponName, int index, StrikeSettings strike,
         AnimatedSprite player, FrameLoader loader, Action<string> warning)
     {
