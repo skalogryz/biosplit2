@@ -45,6 +45,7 @@ public class Main : Node2D
 	private Line2D shotTrail;
 	private Vector2 playerOrigin, enemyOrigin, backgroundOrigin;
 	private Color playerColor, enemyColor;
+	private int combatBackZ, combatFrontZ;
 	private string playerAction = "attack";
 	private bool shootingPose;
 	private Label healthLabel, rageLabel, staminaLabel, status, enemyStatus, inventoryText;
@@ -86,6 +87,9 @@ public class Main : Node2D
 		enemyOrigin = enemy.Position;
 		playerColor = player.Modulate;
 		enemyColor = enemy.Modulate;
+		combatBackZ = Math.Min(player.ZIndex, enemy.ZIndex);
+		combatFrontZ = Math.Min(4096, Math.Max(player.ZIndex, enemy.ZIndex) + 1);
+		combatBackZ = Math.Min(combatBackZ, combatFrontZ - 1);
 		healthLabel = Optional<Label>(HealthLabelPath);
 		rageLabel = Optional<Label>(RageLabelPath);
 		staminaLabel = Optional<Label>(StaminaLabelPath);
@@ -140,6 +144,7 @@ public class Main : Node2D
 			enemyFlash = Mathf.Max(0, enemyFlash - delta);
 		}
 		game.Tick((decimal)delta);
+		if (punchTouchHeld || punchKeyHeld) TryMeleeAttack();
 		if (!game.Paused) scroll = Mathf.Lerp(scroll, targetScroll, Mathf.Min(1, delta * 12));
 		float width = panorama.MotionMirroring.x;
 		if (width > 0 && scroll >= width) { scroll -= width; targetScroll -= width; }
@@ -169,6 +174,13 @@ public class Main : Node2D
 
 	private void OnGameChanged(object sender, GameEvent action)
 	{
+		if (action.Kind == GameEventKind.AttackStarted)
+		{
+			bool enemyAttacks = action.Weapon != null &&
+				(action.Weapon == game.Enemy.Inventory.Weapon1 || action.Weapon == game.Enemy.Inventory.Weapon2);
+			enemy.ZIndex = enemyAttacks ? combatFrontZ : combatBackZ;
+			player.ZIndex = enemyAttacks ? combatBackZ : combatFrontZ;
+		}
 		if (action.Kind == GameEventKind.AttackCompleted && action.Weapon == meleeAttackWeapon)
 			meleeAttackWeapon = null;
 		switch (action.Kind)
@@ -187,7 +199,6 @@ public class Main : Node2D
 				{
 					enemyAction = !string.IsNullOrEmpty(action.StrikeName) && enemy.Frames.HasAnimation(action.StrikeName)
 						? action.StrikeName : "attack";
-					GD.Print($"enemy action: {enemyAction}");
 					enemyHurt = 0;
 					enemy.Play(enemyAction);
 					enemy.Frame = 0;
@@ -266,6 +277,7 @@ public class Main : Node2D
 
 	private void TryMeleeAttack()
 	{
+		if (game.IsAttacking || game.Paused || game.GameOver) return;
 		var weapon = FindReadyWeapon(WeaponType.Melee);
 		if (weapon == null) return;
 		meleeAttackWeapon = weapon;
