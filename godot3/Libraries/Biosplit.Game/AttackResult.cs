@@ -16,6 +16,8 @@ namespace Biosplit.Game
         InsufficientStamina,
         NoStrikes,
         Separating,
-        UnsupportedAttacker
+        UnsupportedAttacker,
+        EnemyTransition,
+        EnemyRotation
     }
 }

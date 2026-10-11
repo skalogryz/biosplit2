@@ -48,17 +48,26 @@ namespace Biosplit.Game
             : activeAttack.Definition.Striker[activeAttack.Item.CurrentStrikeIndex].Copy();
         public event EventHandler<GameEvent> Changed;
 
-        public GameSession(GameSettings settings, string enemyName = "zombie", Random enemyRandom = null)
+        public GameSession(GameSettings settings, string enemyName = null, Random enemyRandom = null)
         {
             this.settings = (settings ?? throw new ArgumentNullException(nameof(settings))).NormalizedCopy();
             this.enemyRandom = enemyRandom ?? new Random();
             enemyLibrary = new List<EnemySettings>(this.settings.Enemies.Values);
             Player = new Character("hero");
             characters.Add(Player);
-            if (!this.settings.Enemies.TryGetValue(enemyName, out var enemySettings))
-                throw new ArgumentException("Unknown enemy: " + enemyName, nameof(enemyName));
-            Enemy = Character.AllocEnemy(enemySettings);
-            characters.Add(Enemy);
+            if (enemyName != null)
+            {
+                if (!this.settings.Enemies.TryGetValue(enemyName, out var enemySettings))
+                    throw new ArgumentException("Unknown enemy: " + enemyName, nameof(enemyName));
+                characters.Add(Character.AllocEnemy(enemySettings));
+            }
+            else
+            {
+                int count = 1 + this.enemyRandom.Next(6);
+                for (int i = 0; i < count; i++)
+                    characters.Add(Character.AllocEnemy(enemyLibrary[this.enemyRandom.Next(enemyLibrary.Count)]));
+            }
+            Enemy = FirstLivingEnemy();
             Health = this.settings.MaxHealth;
             HeroPos = this.settings.HeroPos;
             EnemyMeleePos = this.settings.EnemyMeleePos;
@@ -99,6 +108,31 @@ namespace Biosplit.Game
         }
         public bool Dodging => dodgeRemaining > 0m;
         public bool GameOver => Player.isDefeated;
+        public int MovementDurationMs => settings.MovementDurationMs;
+        public bool EnemyTransitionPending { get; private set; }
+        private decimal enemyRotationElapsed;
+        public GameState State { get; private set; } = GameState.Combat;
+        public decimal EnemyRotationProgress => Math.Min(1m, enemyRotationElapsed * 1000m / MovementDurationMs);
+        public bool BeginEnemyRotation()
+        {
+            if (!EnemyTransitionPending || State == GameState.EnemyRotation || Paused || IsAttacking || IsSeparating) return false;
+            enemyRotationElapsed = 0m;
+            State = GameState.EnemyRotation;
+            Emit(GameEventKind.EnemyRotationStarted);
+            return true;
+        }
+
+        private void AdvanceEnemyRotation(decimal seconds)
+        {
+            AdvanceItemsAndStamina(seconds);
+            dodgeRemaining = Math.Max(0m, dodgeRemaining - seconds);
+            enemyRotationElapsed = Math.Min(MovementDurationMs / 1000m, enemyRotationElapsed + seconds);
+            if (EnemyRotationProgress < 1m) return;
+            State = GameState.Combat;
+            EnemyTransitionPending = false;
+            Emit(GameEventKind.EnemyRotationCompleted);
+            RefreshEnemyTarget();
+        }
         public bool BattleFinished => FirstLivingEnemy() == null;
 
         private Character FirstLivingEnemy()
@@ -148,6 +182,8 @@ namespace Biosplit.Game
                 return AttackResult.UnsupportedWeaponType;
             if (GameOver) return AttackResult.GameOver;
             if (InventoryOpen) return AttackResult.InventoryOpen;
+            if (State == GameState.EnemyRotation) return AttackResult.EnemyRotation;
+            if (EnemyTransitionPending) return AttackResult.EnemyTransition;
             if (!enemyAttacker && Blocking) return AttackResult.Blocking;
             if (BattleFinished) return AttackResult.NoEnemy;
             if (IsAttacking) return AttackResult.AttackInProgress;
@@ -165,8 +201,9 @@ namespace Biosplit.Game
         {
             if (seconds <= 0m || InventoryOpen) return;
             if (GameOver) { AdvanceSeparation(seconds); return; }
+            if (State == GameState.EnemyRotation) { AdvanceEnemyRotation(seconds); return; }
             bool killedByAttack = AdvanceAttackAndItems(seconds);
-            if (killedByAttack) return;
+            if (killedByAttack || EnemyTransitionPending) return;
             if (BattleFinished)
             {
                 if (IsAttacking || separating) return;
@@ -392,6 +429,7 @@ namespace Biosplit.Game
             target.health = Math.Max(0, target.health - damage);
             Emit(GameEventKind.EnemyHurt, damage);
             if (!target.isDefeated) return;
+            EnemyTransitionPending = true;
             Coins += 10;
             if (Wave % 3 == 0) Kits++;
             if (BattleFinished) respawnRemaining = 0.9m;
