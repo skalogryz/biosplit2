@@ -1,4 +1,4 @@
-[gd_scene load_steps=24 format=2]
+[gd_scene load_steps=25 format=2]
 
 [ext_resource path="res://Scripts/Main.cs" type="Script" id=1]
 [ext_resource path="res://Assets/Fonts/NotoSans-Regular.ttf" type="DynamicFontData" id=2]
@@ -17,6 +17,7 @@
 [ext_resource path="res://Scenes/Inventory.tscn" type="PackedScene" id=15]
 [ext_resource path="res://Scenes/RageIndicator.tscn" type="PackedScene" id=16]
 [ext_resource path="res://Scenes/Console.tscn" type="PackedScene" id=17]
+[ext_resource path="res://Scenes/CharacterStatus.tscn" type="PackedScene" id=18]
 
 [sub_resource type="DynamicFont" id=1]
 font_data = ExtResource( 2 )
@@ -76,11 +77,15 @@ frames = ExtResource( 11 )
 animation = "idle"
 playing = true
 
+[node name="CharacterStatus" parent="Combatants/Enemy2" instance=ExtResource( 18 )]
+
 [node name="Enemy3" type="AnimatedSprite" parent="Combatants"]
 position = Vector2( 877, 292 )
 frames = ExtResource( 11 )
 animation = "idle"
 playing = true
+
+[node name="CharacterStatus" parent="Combatants/Enemy3" instance=ExtResource( 18 )]
 
 [node name="Enemy4" type="AnimatedSprite" parent="Combatants"]
 position = Vector2( 1063, 241 )
@@ -88,11 +93,15 @@ frames = ExtResource( 11 )
 animation = "idle"
 playing = true
 
+[node name="CharacterStatus" parent="Combatants/Enemy4" instance=ExtResource( 18 )]
+
 [node name="Enemy" type="AnimatedSprite" parent="Combatants"]
 position = Vector2( 595.2, 286.2 )
 frames = ExtResource( 11 )
 animation = "idle"
 playing = true
+
+[node name="CharacterStatus" parent="Combatants/Enemy" instance=ExtResource( 18 )]
 
 [node name="Player" type="AnimatedSprite" parent="Combatants"]
 position = Vector2( 374.4, 286.2 )
@@ -221,6 +230,7 @@ custom_styles/bg = SubResource( 5 )
 percent_visible = false
 
 [node name="EnemyBar" type="ProgressBar" parent="UI/HUD"]
+visible = false
 anchor_left = 0.6
 anchor_right = 0.96
 margin_left = -66.0

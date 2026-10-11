@@ -45,6 +45,7 @@ public class Main : Node2D
 	private sealed class EnemySlot
 	{
 		public AnimatedSprite Sprite;
+		public CharacterStatus Status;
 		public Character Character;
 		public Vector2 Origin;
 		public Color Color;
@@ -93,7 +94,7 @@ public class Main : Node2D
 		{
 			var sprite = GetNodeOrNull<AnimatedSprite>("Combatants/" + name);
 			if (sprite != null) sprite.Connect("animation_finished", this, nameof(OnEnemyAnimationFinished), new Godot.Collections.Array { sprite });
-			if (sprite != null) enemySlots.Add(new EnemySlot { Sprite = sprite, Origin = sprite.Position, Color = sprite.Modulate, ZIndex = sprite.ZIndex });
+			if (sprite != null) enemySlots.Add(new EnemySlot { Sprite = sprite, Status = sprite.GetNodeOrNull<CharacterStatus>("CharacterStatus"), Origin = sprite.Position, Color = sprite.Modulate, ZIndex = sprite.ZIndex });
 		}
 		WeaponAnimationNormalizer.Normalize(settings, player, warning: text => GD.PushWarning(text));
 		enemySceneFrames = enemy.Frames;
@@ -198,6 +199,7 @@ public class Main : Node2D
 			shotTrail.SetPointPosition(0, player.Position + new Vector2(45, -25));
 			shotTrail.SetPointPosition(1, enemy.Position + new Vector2(-40, -25));
 		}
+		foreach (var slot in enemySlots) slot.Status?.UpdateView();
 		inventory.Visible = game.InventoryOpen;
 		Refresh();
 	}
@@ -213,6 +215,7 @@ public class Main : Node2D
 			var slot = enemySlots[i];
 			var character = i < enemies.Count ? enemies[i] : null;
 			slot.Sprite.Visible = character != null;
+			slot.Status?.Bind(character, slot.Sprite);
 			if (character == null) { slot.Character = null; continue; }
 			if (slot.Character != character)
 			{
