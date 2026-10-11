@@ -40,6 +40,8 @@ public class Main : Node2D
 	[Export] public NodePath InventoryLabelPath = new NodePath("");
 	[Export] public NodePath[] Backgrounds;
 	private ParallaxBackground[] backgrounds;
+	[Export] public NodePath[] MainCharStatus;
+	private CharacterStatus[] mainCharStats;
 
 	private GameSession game;
 	public GameSession Session => game;
@@ -120,7 +122,11 @@ public class Main : Node2D
 		backgrounds = this.ResolvePaths<ParallaxBackground>(Backgrounds);
 		if (backgrounds.Length > 0)
 			backgroundOrigin = backgrounds[0].ScrollOffset;
-
+		mainCharStats = this.ResolvePaths<CharacterStatus>(MainCharStatus);
+		foreach(var st in mainCharStats)
+		{
+			st.Character = game.Player;
+		}
 
 		enemy = GetNode<AnimatedSprite>("Combatants/Enemy");
 		shotTrail = GetNode<Line2D>("Combatants/ShotTrail");

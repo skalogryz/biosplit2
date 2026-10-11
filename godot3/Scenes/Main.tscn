@@ -1,4 +1,4 @@
-[gd_scene load_steps=31 format=2]
+[gd_scene load_steps=32 format=2]
 
 [ext_resource path="res://Scripts/Main.cs" type="Script" id=1]
 [ext_resource path="res://Assets/Fonts/NotoSans-Regular.ttf" type="DynamicFontData" id=2]
@@ -24,6 +24,7 @@
 [ext_resource path="res://Assets/Background/Back_04.png" type="Texture" id=22]
 [ext_resource path="res://Scenes/DeveloperSettings.tscn" type="PackedScene" id=23]
 [ext_resource path="res://Assets/UI/Btn_shot_pricel_01.png" type="Texture" id=24]
+[ext_resource path="res://Scenes/CharacterStatusMain.tscn" type="PackedScene" id=25]
 
 [sub_resource type="DynamicFont" id=1]
 font_data = ExtResource( 2 )
@@ -65,6 +66,7 @@ StatusLabelPath = NodePath("UI/HUD/Status")
 EnemyStatusLabelPath = NodePath("UI/HUD/EnemyStatus")
 InventoryLabelPath = NodePath("UI/HUD/Inventory/InventoryText")
 Backgrounds = [ NodePath("Background"), NodePath("Foreground") ]
+MainCharStatus = [ NodePath("UI/HUD/HeroStatus") ]
 
 [node name="Background" type="ParallaxBackground" parent="."]
 layer = -10
@@ -170,6 +172,9 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 mouse_filter = 2
 theme = SubResource( 6 )
+
+[node name="HeroStatus" parent="UI/HUD" instance=ExtResource( 25 )]
+position = Vector2( 17, 6 )
 
 [node name="TopBackdrop" type="ColorRect" parent="UI/HUD"]
 visible = false
