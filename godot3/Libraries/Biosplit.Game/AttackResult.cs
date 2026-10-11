@@ -18,6 +18,7 @@ namespace Biosplit.Game
         Separating,
         UnsupportedAttacker,
         EnemyTransition,
-        EnemyRotation
+        EnemyRotation,
+        Paused
     }
 }

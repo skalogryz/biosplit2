@@ -151,7 +151,9 @@ namespace Biosplit.Game
             Emit(GameEventKind.EnemyTargetChanged);
         }
         public bool InventoryOpen { get; private set; }
-        public bool Paused => InventoryOpen || GameOver;
+        public bool IsExternallyPaused { get; private set; }
+        public void SetPaused(bool paused) => IsExternallyPaused = paused;
+        public bool Paused => IsExternallyPaused || InventoryOpen || GameOver;
         public int MaxHealth => settings.MaxHealth;
         public int MaxRage => settings.MaxRage;
         public decimal MaxStamina => Player.maxStamina;
@@ -182,6 +184,7 @@ namespace Biosplit.Game
                 return AttackResult.UnsupportedWeaponType;
             if (GameOver) return AttackResult.GameOver;
             if (InventoryOpen) return AttackResult.InventoryOpen;
+            if (IsExternallyPaused) return AttackResult.Paused;
             if (State == GameState.EnemyRotation) return AttackResult.EnemyRotation;
             if (EnemyTransitionPending) return AttackResult.EnemyTransition;
             if (!enemyAttacker && Blocking) return AttackResult.Blocking;
@@ -195,11 +198,11 @@ namespace Biosplit.Game
             return AttackResult.Success;
         }
         public bool CanDodge => !Paused && !Blocking && !Dodging && !BattleFinished && Stamina >= settings.DodgeStamina;
-        public bool CanHeal => InventoryOpen && !GameOver && Kits > 0 && Health < MaxHealth;
+        public bool CanHeal => InventoryOpen && !IsExternallyPaused && !GameOver && Kits > 0 && Health < MaxHealth;
 
         public void Tick(decimal seconds)
         {
-            if (seconds <= 0m || InventoryOpen) return;
+            if (seconds <= 0m || InventoryOpen || IsExternallyPaused) return;
             if (GameOver) { AdvanceSeparation(seconds); return; }
             if (State == GameState.EnemyRotation) { AdvanceEnemyRotation(seconds); return; }
             bool killedByAttack = AdvanceAttackAndItems(seconds);
@@ -402,6 +405,7 @@ namespace Biosplit.Game
 
         public void SetBlocking(bool held)
         {
+            if (IsExternallyPaused && held) return;
             bool next = held && !GameOver && !Dodging && (activeAttack == null || activeAttack.EnemyAttacker);
             if (next == Blocking) return;
             Blocking = next;
