@@ -58,7 +58,7 @@ RageLabelPath = NodePath("UI/HUD/RageLabel")
 StaminaLabelPath = NodePath("UI/HUD/StaminaLabel")
 HealthBarPath = NodePath("UI/HUD/HealthBar")
 RageBarPath = NodePath("UI/HUD/RageBar")
-RageIndicatorPath = NodePath("UI/HUD/RageIndicator")
+RageIndicatorPath = NodePath("Combatants/Player/Node2D/RageIndicator")
 EnemyBarPath = NodePath("UI/HUD/EnemyBar")
 StatusLabelPath = NodePath("UI/HUD/Status")
 EnemyStatusLabelPath = NodePath("UI/HUD/EnemyStatus")
@@ -132,6 +132,15 @@ frames = ExtResource( 10 )
 animation = "attack3"
 playing = true
 
+[node name="Node2D" type="Node2D" parent="Combatants/Player"]
+scale = Vector2( 0.5, 0.5 )
+
+[node name="RageIndicator" parent="Combatants/Player/Node2D" instance=ExtResource( 16 )]
+margin_left = -90.8
+margin_top = -224.4
+margin_right = 89.2
+margin_bottom = -188.4
+
 [node name="StaminaStatus" parent="Combatants/Player" instance=ExtResource( 19 )]
 
 [node name="ShotTrail" type="Line2D" parent="Combatants"]
@@ -142,6 +151,7 @@ default_color = Color( 0.937255, 0.486275, 0.211765, 0 )
 
 [node name="Foreground" type="ParallaxBackground" parent="."]
 layer = -10
+visible = false
 
 [node name="Bottom" type="ParallaxLayer" parent="Foreground"]
 motion_scale = Vector2( 1.5, 1.5 )
@@ -278,12 +288,6 @@ custom_styles/fg = SubResource( 4 )
 custom_styles/bg = SubResource( 5 )
 value = 80.0
 percent_visible = false
-
-[node name="RageIndicator" parent="UI/HUD" instance=ExtResource( 16 )]
-margin_left = 33.0
-margin_top = 24.0
-margin_right = 213.0
-margin_bottom = 60.0
 
 [node name="Inventory" parent="UI/HUD" instance=ExtResource( 15 )]
 
