@@ -69,6 +69,7 @@ public class Main : Node2D
 	private TouchScreenButton[] actions = new TouchScreenButton[5];
 	private InventoryScreen inventory;
 	private ConsoleScreen console;
+	private DeveloperSettingsScreen developerSettings;
 	private TouchActionButton heal;
 	// Presentation timers only. Combat timing belongs to GameSession.
 	private float scroll, targetScroll, pose, enemyPose, flash, enemyFlash, enemyHurt;
@@ -161,9 +162,10 @@ public class Main : Node2D
 		inventory.Visible = false;
 		console = Optional<ConsoleScreen>(ConsoleScreenPath);
 		if (Godot.Object.IsInstanceValid(console)) console.Hide();
+		developerSettings = GetNode<DeveloperSettingsScreen>("UI/HUD/DeveloperSettings");
 		var settingsButton = Optional<TouchScreenButton>(SettingsButtonPath);
-		if (Godot.Object.IsInstanceValid(settingsButton) && !settingsButton.IsConnected("pressed", this, nameof(ToggleConsole)))
-			settingsButton.Connect("pressed", this, nameof(ToggleConsole));
+		if (Godot.Object.IsInstanceValid(settingsButton) && !settingsButton.IsConnected("pressed", this, nameof(ToggleDeveloperSettings)))
+			settingsButton.Connect("pressed", this, nameof(ToggleDeveloperSettings));
 		game.Changed += OnGameChanged;
 		Render();
 	}
@@ -186,6 +188,7 @@ public class Main : Node2D
 		game.Tick((decimal)delta);
 		if (!game.Paused) AdvanceEnemyRotation(delta);
 		if (punchTouchHeld || punchKeyHeld) TryMeleeAttack();
+		if (developerSettings != null && !developerSettings.ScrollOnHitEnabled) targetScroll = scroll;
 		if (!game.Paused) 
 			scroll = Mathf.Lerp(scroll, targetScroll, Mathf.Min(1, delta * 12));
 		//float width = panorama.MotionMirroring.x;
@@ -345,7 +348,7 @@ public class Main : Node2D
 					+ " (" + action.Weapon.Definition.Name + ", индекс " + action.StrikeIndex + ").";
 				break;
 			case GameEventKind.Punch:
-				targetScroll += Mathf.Max(0, ScrollPerPunch);
+				if (developerSettings == null || developerSettings.ScrollOnHitEnabled) targetScroll += Mathf.Max(0, ScrollPerPunch);
 				shootingPose = false;
 				StartPlayerAnimation(StrikeAnimation(action, "attack"));
 				pose = Mathf.Max(AnimationDuration(player, playerAction, 0.20f), (float)game.AttackRemaining);
@@ -460,6 +463,7 @@ public class Main : Node2D
 	public void ToggleInventory() { game.SetInventoryOpen(!game.InventoryOpen); Render(); }
 	public void OnInventoryClosed() { game.SetInventoryOpen(false); Render(); }
 	public void UseKit() { game.UseKit(); Render(); }
+	public void ToggleDeveloperSettings() => developerSettings?.Toggle();
 	public void ToggleConsole()
 	{
 		if (Godot.Object.IsInstanceValid(console)) console.Visible = !console.Visible;

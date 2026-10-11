@@ -1,4 +1,4 @@
-[gd_scene load_steps=29 format=2]
+[gd_scene load_steps=30 format=2]
 
 [ext_resource path="res://Scripts/Main.cs" type="Script" id=1]
 [ext_resource path="res://Assets/Fonts/NotoSans-Regular.ttf" type="DynamicFontData" id=2]
@@ -22,6 +22,7 @@
 [ext_resource path="res://Assets/Background/Back_01.jpg" type="Texture" id=20]
 [ext_resource path="res://Assets/Background/Back_02.png" type="Texture" id=21]
 [ext_resource path="res://Assets/Background/Back_04.png" type="Texture" id=22]
+[ext_resource path="res://Scenes/DeveloperSettings.tscn" type="PackedScene" id=23]
 
 [sub_resource type="DynamicFont" id=1]
 font_data = ExtResource( 2 )
@@ -329,3 +330,5 @@ margin_left = 24.0
 margin_top = 110.0
 margin_right = 936.0
 margin_bottom = 350.0
+
+[node name="DeveloperSettings" parent="UI/HUD" instance=ExtResource( 23 )]
