@@ -23,8 +23,7 @@ namespace Biosplit.Game
                 {
                     if (string.IsNullOrWhiteSpace(section) || section.StartsWith("_", StringComparison.Ordinal)) continue;
                     var enemy = game.Enemies.TryGetValue(section, out var existing) ? existing.Copy() : new EnemySettings(section);
-                    int damage = ini.GetInt(section, "damage", enemy.Damage);
-                    if (damage >= 0) enemy.Damage = damage;
+                    enemy.Damage = DamageRange.Read(ini, section, enemy.Damage, warning);
                     int health = ini.GetInt(section, "health", enemy.Health);
                     if (health > 0) enemy.Health = health;
                     if (ini.TryGetInt(section, "cooldown", out int milliseconds) && milliseconds > 0)

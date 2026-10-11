@@ -41,7 +41,7 @@ namespace Biosplit.Game
         public decimal StaminaGrow { get; set; } = 2m;
         public decimal DodgeStamina { get; set; } = 10m;
         public int DodgeTimeMs { get; set; } = 3000;
-        public int EnemyDamage { get => enemies["zombie"].Damage; set => enemies["zombie"].Damage = value; }
+        public DamageRange EnemyDamage { get => enemies["zombie"].Damage; set => enemies["zombie"].Damage = value; }
         public int EnemyHealth { get => enemies["zombie"].Health; set => enemies["zombie"].Health = value; }
         public decimal EnemyAttackInterval { get => enemies["zombie"].AttackInterval; set => enemies["zombie"].AttackInterval = value; }
         public decimal EnemyWarningTime { get => enemies["zombie"].WarningTime; set => enemies["zombie"].WarningTime = value; }

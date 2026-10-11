@@ -14,7 +14,7 @@ namespace Biosplit.Game
         public string Weapon0 { get; set; }
         public WeaponSettings Weapon0Settings { get; internal set; }
         public int Health { get; set; } = 80;
-        public int Damage { get; set; } = 15;
+        public DamageRange Damage { get; set; } = 15;
         public decimal AttackInterval { get; set; } = 2.4m;
         public decimal WarningTime { get; set; } = 0.8m;
         public int CooldownMs
@@ -36,7 +36,7 @@ namespace Biosplit.Game
         {
             var copy = Copy();
             copy.Health = Math.Max(1, Health);
-            copy.Damage = Math.Max(0, Damage);
+            copy.Damage = Damage;
             copy.AttackInterval = Math.Max(0.001m, AttackInterval);
             copy.WarningTime = Math.Max(0.1m, WarningTime);
             return copy;

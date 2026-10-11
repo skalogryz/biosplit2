@@ -38,8 +38,7 @@ namespace Biosplit.Game
         {
             var weapon = existing?.Copy() ?? new WeaponSettings(section);
             weapon.Type = ReadType(ini, section, weapon.Type);
-            int damage = ini.GetInt(section, "damage", weapon.Damage);
-            if (damage >= 0) weapon.Damage = damage;
+            weapon.Damage = DamageRange.Read(ini, section, weapon.Damage, warning);
             int rageBonus = ini.GetInt(section, "ragebonus", weapon.RageBonus);
             if (rageBonus >= 0) weapon.RageBonus = rageBonus;
             int rageCost = ini.GetInt(section, "rage", weapon.RageCost);

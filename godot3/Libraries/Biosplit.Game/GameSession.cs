@@ -8,6 +8,7 @@ namespace Biosplit.Game
     {
         private readonly GameSettings settings;
         private readonly Random enemyRandom;
+        private readonly Random damageRandom = new Random();
         private readonly List<EnemySettings> enemyLibrary;
         private decimal dodgeRemaining, enemyClock, respawnRemaining;
         private readonly List<Character> characters = new List<Character>();
@@ -265,7 +266,7 @@ namespace Biosplit.Game
             if (activeAttack != attack || attack.DamageApplied) return;
             attack.DamageApplied = true;
             var strike = attack.Definition.Striker[attack.Item.CurrentStrikeIndex];
-            int damage = strike.CalculateDamage(attack.Definition.Damage);
+            int damage = strike.CalculateDamage(strike.DamageModifier == 0m ? 0 : attack.Definition.Damage.Roll(damageRandom));
             if (attack.EnemyAttacker)
             {
                 bool dodged = Dodging;
