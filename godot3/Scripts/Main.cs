@@ -1,6 +1,7 @@
 using Godot;
 using System;
 using Biosplit.Game;
+using Biosplit2.Scripts;
 
 public class Main : Node2D
 {
@@ -37,10 +38,13 @@ public class Main : Node2D
 	[Export] public NodePath StatusLabelPath = new NodePath("");
 	[Export] public NodePath EnemyStatusLabelPath = new NodePath("");
 	[Export] public NodePath InventoryLabelPath = new NodePath("");
+	[Export] public NodePath[] Backgrounds;
+	private ParallaxBackground[] backgrounds;
+
 	private GameSession game;
 	public GameSession Session => game;
-	private ParallaxBackground background;
-	private ParallaxLayer panorama;
+	//private ParallaxBackground background;
+	//private ParallaxLayer panorama;
 	private AnimatedSprite player, enemy;
 	private StaminaStatus playerStaminaStatus;
 	private sealed class EnemySlot
@@ -109,9 +113,13 @@ public class Main : Node2D
 		MaxRage = game.MaxRage;
 		RagePointStep = game.RagePointStep;
 
-		background = GetNode<ParallaxBackground>("Background");
-		panorama = GetNode<ParallaxLayer>("Background/Panorama");
-		backgroundOrigin = background.ScrollOffset;
+		//background = GetNode<ParallaxBackground>("Background");
+		//panorama = GetNode<ParallaxLayer>("Background/Panorama");
+		//backgroundOrigin = background.ScrollOffset;
+		backgrounds = this.ResolvePaths<ParallaxBackground>(Backgrounds);
+		if (backgrounds.Length > 0)
+			backgroundOrigin = backgrounds[0].ScrollOffset;
+
 
 		enemy = GetNode<AnimatedSprite>("Combatants/Enemy");
 		shotTrail = GetNode<Line2D>("Combatants/ShotTrail");
@@ -178,16 +186,21 @@ public class Main : Node2D
 		game.Tick((decimal)delta);
 		if (!game.Paused) AdvanceEnemyRotation(delta);
 		if (punchTouchHeld || punchKeyHeld) TryMeleeAttack();
-		if (!game.Paused) scroll = Mathf.Lerp(scroll, targetScroll, Mathf.Min(1, delta * 12));
-		float width = panorama.MotionMirroring.x;
-		if (width > 0 && scroll >= width) { scroll -= width; targetScroll -= width; }
+		if (!game.Paused) 
+			scroll = Mathf.Lerp(scroll, targetScroll, Mathf.Min(1, delta * 12));
+		//float width = panorama.MotionMirroring.x;
+		//if (width > 0 && scroll >= width) { scroll -= width; targetScroll -= width; }
 		Render();
 	}
 
 	private void Render()
 	{
 		SyncEnemySprites();
-		background.ScrollOffset = backgroundOrigin + new Vector2(-scroll, 0);
+		//background.ScrollOffset = backgroundOrigin + new Vector2(-scroll, 0);
+		foreach (var b in backgrounds)
+		{
+			b.ScrollOffset = backgroundOrigin + new Vector2(-scroll, 0);
+		}
 		player.Position = new Vector2((float)game.HeroPos + (game.Dodging ? -90 : 0), playerOrigin.y);
 		if (!rotatingEnemies) enemy.Position = new Vector2((float)game.EnemyMeleePos, enemyOrigin.y);
 		player.Modulate = DamageFlashEnabled && flash > 0 ? new Color("ff7777") : playerColor;
