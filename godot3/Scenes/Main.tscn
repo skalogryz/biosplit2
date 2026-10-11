@@ -194,6 +194,7 @@ mouse_filter = 2
 color = Color( 0.02, 0.04, 0.06, 0.94 )
 
 [node name="HealthIcon" type="TextureRect" parent="UI/HUD"]
+visible = false
 margin_left = 623.0
 margin_top = 28.0
 margin_right = 642.0
@@ -201,6 +202,7 @@ margin_bottom = 49.0
 texture = ExtResource( 14 )
 
 [node name="PowerIcon" type="TextureRect" parent="UI/HUD"]
+visible = false
 margin_left = 763.0
 margin_top = 27.0
 margin_right = 782.0
@@ -214,6 +216,7 @@ normal = ExtResource( 12 )
 shape_visible = false
 
 [node name="HealthLabel" type="Label" parent="UI/HUD"]
+visible = false
 margin_left = 645.0
 margin_top = 19.0
 margin_right = 717.0
@@ -231,6 +234,7 @@ rect_scale = Vector2( 1.5, 1.5 )
 text = "100/100"
 
 [node name="StaminaLabel" type="Label" parent="UI/HUD"]
+visible = false
 margin_left = 791.0
 margin_top = 19.0
 margin_right = 838.0
