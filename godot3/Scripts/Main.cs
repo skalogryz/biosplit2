@@ -506,7 +506,7 @@ public class Main : Node2D
 		}
 		if (!gameplayInput || game.Paused) return;
 		if (Input.IsActionJustPressed("melee_attack")) Punch();
-		if (Input.IsActionJustPressed("shoot")) Shoot();
+		if (Input.IsActionJustPressed("shoot") || Input.IsActionJustPressed("aimed_shot")) Shoot();
 		if (Input.IsActionJustPressed("dodge")) Dodge();
 	}
 	private static void SetAnimation(AnimatedSprite actor, string animation)
