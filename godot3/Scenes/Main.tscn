@@ -301,8 +301,8 @@ shape_visible = false
 script = ExtResource( 8 )
 
 [node name="InventoryButton2" type="TouchScreenButton" parent="UI/HUD/Node2D"]
-position = Vector2( 154, 452 )
-scale = Vector2( 1.63415, 1.60526 )
+position = Vector2( 144, 452 )
+scale = Vector2( 1.11111, 1.09147 )
 normal = ExtResource( 7 )
 shape_centered = false
 shape_visible = false
