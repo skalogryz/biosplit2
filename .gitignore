@@ -447,3 +447,5 @@ mono_crash.*.json
 
 # I keep the Windows builds there 
 Build/
+# just a reference images
+Images/
