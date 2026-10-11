@@ -42,6 +42,7 @@ public class Main : Node2D
 	private ParallaxBackground background;
 	private ParallaxLayer panorama;
 	private AnimatedSprite player, enemy;
+	private StaminaStatus playerStaminaStatus;
 	private sealed class EnemySlot
 	{
 		public AnimatedSprite Sprite;
@@ -101,6 +102,8 @@ public class Main : Node2D
 		enemyAnimations = EnemyAnimationLibrary.Prepare(settings, enemy, warning: text => GD.PushWarning(text));
 		ApplySettings(settings);
 		game = new GameSession(settings);
+		playerStaminaStatus = player.GetNodeOrNull<StaminaStatus>("StaminaStatus");
+		playerStaminaStatus?.Bind(game.Player, player);
 		SyncEnemySprites();
 		MaxHealth = game.MaxHealth;
 		MaxRage = game.MaxRage;
@@ -199,6 +202,7 @@ public class Main : Node2D
 			shotTrail.SetPointPosition(0, player.Position + new Vector2(45, -25));
 			shotTrail.SetPointPosition(1, enemy.Position + new Vector2(-40, -25));
 		}
+		playerStaminaStatus?.UpdateView();
 		foreach (var slot in enemySlots) slot.Status?.UpdateView();
 		inventory.Visible = game.InventoryOpen;
 		Refresh();

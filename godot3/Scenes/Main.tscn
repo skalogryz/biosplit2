@@ -1,4 +1,4 @@
-[gd_scene load_steps=25 format=2]
+[gd_scene load_steps=26 format=2]
 
 [ext_resource path="res://Scripts/Main.cs" type="Script" id=1]
 [ext_resource path="res://Assets/Fonts/NotoSans-Regular.ttf" type="DynamicFontData" id=2]
@@ -18,6 +18,7 @@
 [ext_resource path="res://Scenes/RageIndicator.tscn" type="PackedScene" id=16]
 [ext_resource path="res://Scenes/Console.tscn" type="PackedScene" id=17]
 [ext_resource path="res://Scenes/CharacterStatus.tscn" type="PackedScene" id=18]
+[ext_resource path="res://Scenes/StaminaStatus.tscn" type="PackedScene" id=19]
 
 [sub_resource type="DynamicFont" id=1]
 font_data = ExtResource( 2 )
@@ -109,6 +110,8 @@ frames = ExtResource( 10 )
 animation = "attack3"
 playing = true
 
+[node name="StaminaStatus" parent="Combatants/Player" instance=ExtResource( 19 )]
+
 [node name="ShotTrail" type="Line2D" parent="Combatants"]
 visible = false
 points = PoolVector2Array( 419.4, 261.2, 555.2, 261.2 )
@@ -116,6 +119,7 @@ width = 5.0
 default_color = Color( 0.937255, 0.486275, 0.211765, 0 )
 
 [node name="UI" type="CanvasLayer" parent="."]
+visible = false
 
 [node name="HUD" type="Control" parent="UI"]
 anchor_right = 1.0
