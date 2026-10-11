@@ -119,7 +119,6 @@ width = 5.0
 default_color = Color( 0.937255, 0.486275, 0.211765, 0 )
 
 [node name="UI" type="CanvasLayer" parent="."]
-visible = false
 
 [node name="HUD" type="Control" parent="UI"]
 anchor_right = 1.0
