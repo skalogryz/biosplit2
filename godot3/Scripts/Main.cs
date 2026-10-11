@@ -60,6 +60,7 @@ public class Main : Node2D
 	private bool blockTouchHeld, blockKeyHeld, punchTouchHeld, punchKeyHeld;
 	private WeaponItem meleeAttackWeapon;
 	private string enemyAction = "attack";
+	private System.Collections.Generic.Dictionary<string, SpriteFrames> enemyAnimations;
 	private string message = "Ударьте врага, чтобы накопить ярость.";
 
 	public override void _Ready()
@@ -70,10 +71,10 @@ public class Main : Node2D
 		player = GetNode<AnimatedSprite>("Combatants/Player");
 		enemy = GetNode<AnimatedSprite>("Combatants/Enemy");
 		WeaponAnimationNormalizer.Normalize(settings, player, warning: text => GD.PushWarning(text));
-		WeaponAnimationNormalizer.NormalizeEnemyAnimations(settings.Enemies["zombie"], enemy, warning: text => GD.PushWarning(text));
-		WeaponAnimationNormalizer.Normalize(settings.EnemyWeapons.Values, enemy, warning: text => GD.PushWarning(text));
+		enemyAnimations = EnemyAnimationLibrary.Prepare(settings, enemy, warning: text => GD.PushWarning(text));
 		ApplySettings(settings);
 		game = new GameSession(settings);
+		enemy.Frames = enemyAnimations[game.Enemy.Name];
 		MaxHealth = game.MaxHealth;
 		MaxRage = game.MaxRage;
 		RagePointStep = game.RagePointStep;
@@ -248,6 +249,8 @@ public class Main : Node2D
 				else { flash = 0.18f; message = "Враг нанёс " + action.Damage + " урона."; }
 				break;
 			case GameEventKind.EnemySpawned:
+				enemy.Frames = enemyAnimations[game.Enemy.Name];
+				enemyAction = "attack";
 				enemyHurt = enemyPose = enemyFlash = 0;
 				enemy.Modulate = enemyColor;
 				enemy.Play("idle");
@@ -328,8 +331,8 @@ public class Main : Node2D
 		// Receive release even if a Control consumes the key event.
 		if (inputEvent is InputEventKey punchKey 
 			&& (punchKey.Scancode == (uint)KeyList.Slash
-            || punchKey.Scancode == (uint)KeyList.Space)
-            && !punchKey.Pressed)
+			|| punchKey.Scancode == (uint)KeyList.Space)
+			&& !punchKey.Pressed)
 		{
 			punchKeyHeld = false;
 			CancelReleasedMeleeAttack();
