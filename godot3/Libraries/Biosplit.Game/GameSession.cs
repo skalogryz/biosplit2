@@ -236,10 +236,18 @@ namespace Biosplit.Game
         public bool Shoot() => StartAttack(Player.Inventory.Weapon2) == AttackResult.Success;
 
         public AttackResult StartAttack(WeaponItem weapon) => StartAttack(Player, weapon);
-        public AttackResult StartAttack(Character attacker, WeaponItem weapon)
+        public AttackResult StartAttack(WeaponItem weapon, Character target) => StartAttack(Player, weapon, target);
+        public AttackResult StartAttack(Character attacker, WeaponItem weapon) => StartAttack(attacker, weapon, null);
+        public AttackResult StartAttack(Character attacker, WeaponItem weapon, Character target)
         {
             var result = GetAttackStartResult(attacker, weapon);
             if (result != AttackResult.Success) return result;
+            var attackTarget = target ?? (attacker == Player ? FirstLivingEnemy() : Player);
+            if (attackTarget == null || attackTarget.isDefeated || !characters.Contains(attackTarget)
+                || (attacker == Player && (attackTarget.EnemySettings == null
+                    || (weapon.Definition.Type == WeaponType.Melee && attackTarget != FirstLivingEnemy())))
+                || (attacker != Player && attackTarget != Player))
+                return AttackResult.InvalidTarget;
             RefreshEnemyTarget();
             var definition = weapon.Definition.Copy();
             if (attacker == Player)
@@ -251,7 +259,7 @@ namespace Biosplit.Game
             {
                 Item = weapon,
                 Attacker = attacker,
-                Target = attacker == Player ? FirstLivingEnemy() : Player,
+                Target = attackTarget,
                 Definition = definition,
                 EnemyAttacker = attacker != Player,
                 Approaching = definition.Type == WeaponType.Melee,
@@ -431,14 +439,14 @@ namespace Biosplit.Game
         private void HurtEnemy(Character target, int damage)
         {
             target.health = Math.Max(0, target.health - damage);
-            Emit(GameEventKind.EnemyHurt, damage);
+            Emit(GameEventKind.EnemyHurt, damage, target: target);
             if (!target.isDefeated) return;
             EnemyTransitionPending = true;
             Coins += 10;
             if (Wave % 3 == 0) Kits++;
             if (BattleFinished) respawnRemaining = 0.9m;
             enemyClock = 0m;
-            Emit(GameEventKind.EnemyDefeated);
+            Emit(GameEventKind.EnemyDefeated, target: target);
             if (BattleFinished) Emit(GameEventKind.BattleCompleted);
         }
 
@@ -468,7 +476,7 @@ namespace Biosplit.Game
         }
         private void EmitAttackEvent(GameEventKind kind, Attack attack)
             => Changed?.Invoke(this, new GameEvent(kind, weapon: attack.Item,
-                attacker: attack.Attacker,
+                attacker: attack.Attacker, target: attack.Target,
                 strikeIndex: attack.Item.CurrentStrikeIndex,
                 strikeName: attack.Item.CurrentStrikeIndex < 0 ? null : attack.Definition.Striker[attack.Item.CurrentStrikeIndex].Name));
 
@@ -529,7 +537,7 @@ namespace Biosplit.Game
                 Stamina += settings.StaminaGrow * seconds;
         }
 
-        private void Emit(GameEventKind kind, int damage = 0, bool blocked = false, bool dodged = false, WeaponItem weapon = null)
-            => Changed?.Invoke(this, new GameEvent(kind, damage, blocked, dodged, weapon));
+        private void Emit(GameEventKind kind, int damage = 0, bool blocked = false, bool dodged = false, WeaponItem weapon = null, Character target = null)
+            => Changed?.Invoke(this, new GameEvent(kind, damage, blocked, dodged, weapon, attacker: activeAttack?.Attacker, target: target ?? activeAttack?.Target));
     }
 }

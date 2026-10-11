@@ -19,6 +19,7 @@ namespace Biosplit.Game
         UnsupportedAttacker,
         EnemyTransition,
         EnemyRotation,
-        Paused
+        Paused,
+        InvalidTarget
     }
 }
