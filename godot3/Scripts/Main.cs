@@ -163,6 +163,8 @@ public class Main : Node2D
 		console = Optional<ConsoleScreen>(ConsoleScreenPath);
 		if (Godot.Object.IsInstanceValid(console)) console.Hide();
 		developerSettings = GetNode<DeveloperSettingsScreen>("UI/HUD/DeveloperSettings");
+		developerSettings.Connect("visibility_changed", this, nameof(OnDeveloperSettingsVisibilityChanged));
+		OnDeveloperSettingsVisibilityChanged();
 		var settingsButton = Optional<TouchScreenButton>(SettingsButtonPath);
 		if (Godot.Object.IsInstanceValid(settingsButton) && !settingsButton.IsConnected("pressed", this, nameof(ToggleDeveloperSettings)))
 			settingsButton.Connect("pressed", this, nameof(ToggleDeveloperSettings));
@@ -463,6 +465,7 @@ public class Main : Node2D
 	public void ToggleInventory() { game.SetInventoryOpen(!game.InventoryOpen); Render(); }
 	public void OnInventoryClosed() { game.SetInventoryOpen(false); Render(); }
 	public void UseKit() { game.UseKit(); Render(); }
+	public void OnDeveloperSettingsVisibilityChanged() => game.SetPaused(developerSettings.Visible);
 	public void ToggleDeveloperSettings() => developerSettings?.Toggle();
 	public void ToggleConsole()
 	{
