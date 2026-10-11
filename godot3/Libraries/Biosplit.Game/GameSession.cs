@@ -7,6 +7,8 @@ namespace Biosplit.Game
     public sealed class GameSession
     {
         private readonly GameSettings settings;
+        private readonly Random enemyRandom;
+        private readonly List<EnemySettings> enemyLibrary;
         private decimal dodgeRemaining, enemyClock, respawnRemaining;
         private readonly List<Character> characters = new List<Character>();
         public IReadOnlyList<Character> Characters { get; }
@@ -43,9 +45,11 @@ namespace Biosplit.Game
             : activeAttack.Definition.Striker[activeAttack.Item.CurrentStrikeIndex].Copy();
         public event EventHandler<GameEvent> Changed;
 
-        public GameSession(GameSettings settings, string enemyName = "zombie")
+        public GameSession(GameSettings settings, string enemyName = "zombie", Random enemyRandom = null)
         {
             this.settings = (settings ?? throw new ArgumentNullException(nameof(settings))).NormalizedCopy();
+            this.enemyRandom = enemyRandom ?? new Random();
+            enemyLibrary = new List<EnemySettings>(this.settings.Enemies.Values);
             Player = new Character("hero");
             characters.Add(Player);
             if (!this.settings.Enemies.TryGetValue(enemyName, out var enemySettings))
@@ -61,7 +65,7 @@ namespace Biosplit.Game
         }
 
         public Character Player { get; }
-        public Character Enemy { get; }
+        public Character Enemy { get; private set; }
         public int Health
         {
             get => Player.health;
@@ -150,7 +154,9 @@ namespace Biosplit.Game
                 if (respawnRemaining <= 0m)
                 {
                     Wave++;
-                    EnemyHealth = Enemy.EnemySettings.Health;
+                    int characterIndex = characters.IndexOf(Enemy);
+                    Enemy = Character.AllocEnemy(enemyLibrary[enemyRandom.Next(enemyLibrary.Count)]);
+                    characters[characterIndex] = Enemy;
                     enemyClock = 0m;
                     Emit(GameEventKind.EnemySpawned);
                 }
