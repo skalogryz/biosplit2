@@ -335,10 +335,9 @@ namespace Biosplit.Game
 
         public void SetBlocking(bool held)
         {
-            bool next = held && !GameOver && !Dodging;
+            bool next = held && !GameOver && !Dodging && (activeAttack == null || activeAttack.EnemyAttacker);
             if (next == Blocking) return;
             Blocking = next;
-            if (Blocking && activeAttack != null && !activeAttack.EnemyAttacker) CancelAttack();
             Emit(next ? GameEventKind.BlockStarted : GameEventKind.BlockEnded);
         }
 
