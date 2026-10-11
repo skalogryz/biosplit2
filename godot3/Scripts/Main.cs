@@ -179,6 +179,7 @@ public class Main : Node2D
 
 	public override void _Process(float delta)
 	{
+		UpdateMappedInput();
 		if (!game.Paused)
 		{
 			pose = Mathf.Max(0, pose - delta);
@@ -472,45 +473,34 @@ public class Main : Node2D
 		if (Godot.Object.IsInstanceValid(console)) console.Visible = !console.Visible;
 	}
 
-	public override void _Input(InputEvent inputEvent)
+	private void UpdateMappedInput()
 	{
-		if (inputEvent is InputEventKey consoleKey && consoleKey.Scancode == (uint)KeyList.Quoteleft)
-		{
-			if (consoleKey.Pressed && !consoleKey.Echo) ToggleConsole();
-			GetTree().SetInputAsHandled();
-			return;
-		}
-		// Receive release even if a Control consumes the key event.
-		if (inputEvent is InputEventKey punchKey 
-			&& (punchKey.Scancode == (uint)KeyList.Slash
-			|| punchKey.Scancode == (uint)KeyList.Space)
-			&& !punchKey.Pressed)
+		if (Input.IsActionJustPressed("toggle_console")) ToggleConsole();
+		var focus = GetNode<Control>("UI/HUD").GetFocusOwner();
+		bool textFocused = focus is TextEdit || focus is LineEdit;
+		bool settingsOpen = developerSettings != null && developerSettings.Visible;
+		bool gameplayInput = !textFocused && !settingsOpen && !game.Paused;
+
+		bool meleeHeld = gameplayInput && Input.IsActionPressed("melee_attack");
+		if (punchKeyHeld && !meleeHeld)
 		{
 			punchKeyHeld = false;
 			CancelReleasedMeleeAttack();
 		}
-		if (inputEvent is InputEventKey key && key.Scancode == (uint)KeyList.Z && !key.Pressed)
-		{
-			blockKeyHeld = false;
-			UpdateBlock();
-		}
-	}
+		else punchKeyHeld = meleeHeld;
 
-	public override void _UnhandledKeyInput(InputEventKey key)
-	{
-		if (!key.Pressed || key.Echo) return;
-		switch ((KeyList)key.Scancode)
+		bool blockHeld = gameplayInput && Input.IsActionPressed("block");
+		if (blockKeyHeld != blockHeld) { blockKeyHeld = blockHeld; UpdateBlock(); }
+		if (!textFocused && !settingsOpen)
 		{
-			case KeyList.Space:
-			case KeyList.Slash: punchKeyHeld = true; Punch(); break;
-			case KeyList.Apostrophe: Shoot(); break;
-			case KeyList.A: Dodge(); break;
-			case KeyList.Z: blockKeyHeld = true; UpdateBlock(); break;
-			case KeyList.I: case KeyList.Escape: ToggleInventory(); break;
-			case KeyList.R: GetTree().ReloadCurrentScene(); break;
+			if (Input.IsActionJustPressed("toggle_inventory")) ToggleInventory();
+			if (Input.IsActionJustPressed("restart_game")) { GetTree().ReloadCurrentScene(); return; }
 		}
+		if (!gameplayInput || game.Paused) return;
+		if (Input.IsActionJustPressed("melee_attack")) Punch();
+		if (Input.IsActionJustPressed("shoot")) Shoot();
+		if (Input.IsActionJustPressed("dodge")) Dodge();
 	}
-
 	private static void SetAnimation(AnimatedSprite actor, string animation)
 	{
 		if (actor.Frames.HasAnimation(animation) && actor.Animation != animation) actor.Play(animation);
