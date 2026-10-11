@@ -8,9 +8,14 @@ public static class WeaponAnimationNormalizer
 {
     public static void Normalize(GameSettings settings, AnimatedSprite player, string executableDirectory = null, Action<string> warning = null)
     {
+        Normalize(settings.Weapons.Values, player, executableDirectory, warning);
+    }
+
+    public static void Normalize(IEnumerable<WeaponSettings> weapons, AnimatedSprite player, string executableDirectory = null, Action<string> warning = null)
+    {
         FrameLoader loader = null;
         bool copiedFrames = false;
-        foreach (var weapon in settings.Weapons.Values)
+        foreach (var weapon in weapons)
         {
             var strikes = weapon.Striker;
             for (int i = 0; i < strikes.Length; i++)

@@ -58,14 +58,18 @@ public class Main : Node2D
 	private float scroll, targetScroll, pose, enemyPose, flash, enemyFlash, enemyHurt;
 	private bool blockTouchHeld, blockKeyHeld, punchTouchHeld, punchKeyHeld;
 	private WeaponItem meleeAttackWeapon;
+	private string enemyAction = "attack";
 	private string message = "Ударьте врага, чтобы накопить ярость.";
 
 	public override void _Ready()
 	{
 		var settings = CreateSettings();
 		GameConfiguration.Load(System.IO.Path.GetDirectoryName(OS.GetExecutablePath()), settings, text => GD.PushWarning(text));
+		settings = settings.NormalizedCopy();
 		player = GetNode<AnimatedSprite>("Combatants/Player");
+		enemy = GetNode<AnimatedSprite>("Combatants/Enemy");
 		WeaponAnimationNormalizer.Normalize(settings, player, warning: text => GD.PushWarning(text));
+		WeaponAnimationNormalizer.Normalize(settings.EnemyWeapons.Values, enemy, warning: text => GD.PushWarning(text));
 		ApplySettings(settings);
 		game = new GameSession(settings);
 		MaxHealth = game.MaxHealth;
@@ -150,7 +154,7 @@ public class Main : Node2D
 		player.Modulate = DamageFlashEnabled && flash > 0 ? new Color("ff7777") : playerColor;
 		SetAnimation(player, game.GameOver ? "defeat" : game.Blocking ? "block" : pose > 0 ? playerAction : game.Dodging ? "dodge" : flash > 0 ? "hurt" : "idle");
 		enemy.Modulate = DamageFlashEnabled && enemyFlash > 0 ? new Color("ff7777") : enemyColor;
-		SetAnimation(enemy, game.EnemyHealth <= 0 ? "defeat" : enemyHurt > 0 ? "hurt" : enemyPose > 0 ? "attack" : "idle");
+		SetAnimation(enemy, game.EnemyHealth <= 0 ? "defeat" : enemyHurt > 0 ? "hurt" : enemyPose > 0 ? enemyAction : "idle");
 		player.Playing = !game.Paused;
 		enemy.Playing = !game.Paused;
 		shotTrail.Visible = pose > 0 && shootingPose;
@@ -179,6 +183,16 @@ public class Main : Node2D
 				message = (action.Attacker == game.Enemy ? "Враг" : "Герой") + ": закончился отход.";
 				break;
 			case GameEventKind.StrikeStarted:
+				if (action.Attacker == game.Enemy)
+				{
+					enemyAction = !string.IsNullOrEmpty(action.StrikeName) && enemy.Frames.HasAnimation(action.StrikeName)
+						? action.StrikeName : "attack";
+					GD.Print($"enemy action: {enemyAction}");
+					enemyHurt = 0;
+					enemy.Play(enemyAction);
+					enemy.Frame = 0;
+					enemyPose = Mathf.Max(AnimationDuration(enemy, enemyAction, 0.25f), (float)game.AttackRemaining);
+				}
 				message = (action.Attacker == game.Enemy ? "Враг" : "Герой") + ": начался страйк "
 					+ (string.IsNullOrEmpty(action.StrikeName) ? "#" + action.StrikeIndex : action.StrikeName)
 					+ " (" + action.Weapon.Definition.Name + ", индекс " + action.StrikeIndex + ").";
@@ -217,8 +231,6 @@ public class Main : Node2D
 				}
 				return;
 			case GameEventKind.EnemyAttacked:
-				if (enemyHurt <= 0) { enemy.Play("attack"); enemy.Frame = 0; }
-				enemyPose = AnimationDuration(enemy, "attack", 0.25f);
 				if (action.Dodged) message = "Уворот: атака прошла мимо!";
 				else if (action.Blocked) message = "Блок: атака отражена!";
 				else { flash = 0.18f; message = "Враг нанёс " + action.Damage + " урона."; }
