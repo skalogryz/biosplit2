@@ -42,6 +42,15 @@ public class Main : Node2D
 	private ParallaxBackground background;
 	private ParallaxLayer panorama;
 	private AnimatedSprite player, enemy;
+	private sealed class EnemySlot
+	{
+		public AnimatedSprite Sprite;
+		public Character Character;
+		public Vector2 Origin;
+		public Color Color;
+		public int ZIndex;
+	}
+	private readonly System.Collections.Generic.List<EnemySlot> enemySlots = new System.Collections.Generic.List<EnemySlot>();
 	private Line2D shotTrail;
 	private Vector2 playerOrigin, enemyOrigin, backgroundOrigin;
 	private Color playerColor, enemyColor;
@@ -61,6 +70,16 @@ public class Main : Node2D
 	private WeaponItem meleeAttackWeapon;
 	private string enemyAction = "attack";
 	private System.Collections.Generic.Dictionary<string, SpriteFrames> enemyAnimations;
+	private SpriteFrames enemySceneFrames;
+	private Character defeatedEnemy;
+	private bool defeatAnimationFinished, rotatingEnemies;
+
+	private sealed class EnemyRotation
+	{
+		public AnimatedSprite Sprite;
+		public Vector2 Start, Target;
+	}
+	private readonly System.Collections.Generic.List<EnemyRotation> enemyRotations = new System.Collections.Generic.List<EnemyRotation>();
 	private string message = "Ударьте врага, чтобы накопить ярость.";
 
 	public override void _Ready()
@@ -70,11 +89,18 @@ public class Main : Node2D
 		settings = settings.NormalizedCopy();
 		player = GetNode<AnimatedSprite>("Combatants/Player");
 		enemy = GetNode<AnimatedSprite>("Combatants/Enemy");
+		foreach (string name in new[] { "Enemy", "Enemy2", "Enemy3", "Enemy4" })
+		{
+			var sprite = GetNodeOrNull<AnimatedSprite>("Combatants/" + name);
+			if (sprite != null) sprite.Connect("animation_finished", this, nameof(OnEnemyAnimationFinished), new Godot.Collections.Array { sprite });
+			if (sprite != null) enemySlots.Add(new EnemySlot { Sprite = sprite, Origin = sprite.Position, Color = sprite.Modulate, ZIndex = sprite.ZIndex });
+		}
 		WeaponAnimationNormalizer.Normalize(settings, player, warning: text => GD.PushWarning(text));
+		enemySceneFrames = enemy.Frames;
 		enemyAnimations = EnemyAnimationLibrary.Prepare(settings, enemy, warning: text => GD.PushWarning(text));
 		ApplySettings(settings);
 		game = new GameSession(settings);
-		enemy.Frames = enemyAnimations[game.Enemy.Name];
+		SyncEnemySprites();
 		MaxHealth = game.MaxHealth;
 		MaxRage = game.MaxRage;
 		RagePointStep = game.RagePointStep;
@@ -146,6 +172,7 @@ public class Main : Node2D
 			enemyFlash = Mathf.Max(0, enemyFlash - delta);
 		}
 		game.Tick((decimal)delta);
+		if (!game.Paused) AdvanceEnemyRotation(delta);
 		if (punchTouchHeld || punchKeyHeld) TryMeleeAttack();
 		if (!game.Paused) scroll = Mathf.Lerp(scroll, targetScroll, Mathf.Min(1, delta * 12));
 		float width = panorama.MotionMirroring.x;
@@ -155,9 +182,10 @@ public class Main : Node2D
 
 	private void Render()
 	{
+		SyncEnemySprites();
 		background.ScrollOffset = backgroundOrigin + new Vector2(-scroll, 0);
 		player.Position = new Vector2((float)game.HeroPos + (game.Dodging ? -90 : 0), playerOrigin.y);
-		enemy.Position = new Vector2((float)game.EnemyMeleePos, enemyOrigin.y);
+		if (!rotatingEnemies) enemy.Position = new Vector2((float)game.EnemyMeleePos, enemyOrigin.y);
 		player.Modulate = DamageFlashEnabled && flash > 0 ? new Color("ff7777") : playerColor;
 		SetAnimation(player, game.GameOver ? "defeat" : game.Blocking ? "block" : pose > 0 ? playerAction : game.Dodging ? "dodge" : flash > 0 ? "hurt" : "idle");
 		enemy.Modulate = DamageFlashEnabled && enemyFlash > 0 ? new Color("ff7777") : enemyColor;
@@ -174,6 +202,92 @@ public class Main : Node2D
 		Refresh();
 	}
 
+	private void SyncEnemySprites()
+	{
+		if (rotatingEnemies) return;
+		var enemies = new System.Collections.Generic.List<Character>();
+		foreach (var character in game.Characters)
+			if (character.EnemySettings != null && (!character.isDefeated || character == defeatedEnemy)) enemies.Add(character);
+		for (int i = 0; i < enemySlots.Count; i++)
+		{
+			var slot = enemySlots[i];
+			var character = i < enemies.Count ? enemies[i] : null;
+			slot.Sprite.Visible = character != null;
+			if (character == null) { slot.Character = null; continue; }
+			if (slot.Character != character)
+			{
+				slot.Character = character;
+				ApplyEnemyAnimations(slot.Sprite, character);
+				slot.Sprite.Frame = 0;
+			}
+			if (character == game.Enemy)
+			{
+				enemy = slot.Sprite;
+				enemyOrigin = slot.Origin;
+				enemyColor = slot.Color;
+			}
+			else
+			{
+				slot.Sprite.Position = slot.Origin;
+				slot.Sprite.Modulate = slot.Color;
+				slot.Sprite.ZIndex = slot.ZIndex;
+				SetAnimation(slot.Sprite, "idle");
+				slot.Sprite.Playing = !game.Paused;
+			}
+		}
+	}
+
+	public void OnEnemyAnimationFinished(AnimatedSprite actor)
+	{
+		if (defeatedEnemy != null && actor == enemy && actor.Animation == "defeat")
+			defeatAnimationFinished = true;
+	}
+
+	private void AdvanceEnemyRotation(float delta)
+	{
+		if (defeatedEnemy == null) return;
+		if (!rotatingEnemies)
+		{
+			if (!defeatAnimationFinished || game.IsAttacking || game.IsSeparating) return;
+			enemyRotations.Clear();
+			int destination = 0;
+			foreach (var slot in enemySlots)
+			{
+				if (slot.Character == null || slot.Character.isDefeated) continue;
+				var target = enemySlots[destination++].Origin;
+				if (destination == 1) target.x = (float)game.EnemyInitialPos;
+				enemyRotations.Add(new EnemyRotation { Sprite = slot.Sprite, Start = slot.Sprite.Position, Target = target });
+				SetAnimation(slot.Sprite, "idle");
+			}
+			if (!game.BeginEnemyRotation()) return;
+			enemy.Visible = false;
+			rotatingEnemies = true;
+			return;
+		}
+		float progress = (float)game.EnemyRotationProgress;
+		foreach (var movement in enemyRotations)
+			movement.Sprite.Position = movement.Start.LinearInterpolate(movement.Target, progress);
+		if (game.State == GameState.EnemyRotation) return;
+		rotatingEnemies = false;
+		defeatedEnemy = null;
+		defeatAnimationFinished = false;
+		enemyRotations.Clear();
+
+		SyncEnemySprites();
+	}
+	private void ApplyEnemyAnimations(AnimatedSprite actor, Character character)
+	{
+		if (!enemyAnimations.TryGetValue(character.Name, out var frames))
+		{
+			actor.Frames = Godot.Object.IsInstanceValid(enemySceneFrames) ? (SpriteFrames)enemySceneFrames.Duplicate() : new SpriteFrames();
+			WeaponAnimationNormalizer.NormalizeEnemyAnimations(character.EnemySettings, actor, warning: text => GD.PushWarning(text));
+			foreach (var weapon in new[] { character.Inventory.Weapon1, character.Inventory.Weapon2 })
+				if (weapon != null) WeaponAnimationNormalizer.Normalize(new[] { weapon.Definition }, actor, warning: text => GD.PushWarning(text));
+			frames = actor.Frames;
+			enemyAnimations[character.Name] = frames;
+		}
+		actor.Frames = frames;
+	}
 	private void OnGameChanged(object sender, GameEvent action)
 	{
 		if (action.Kind == GameEventKind.AttackStarted)
@@ -233,6 +347,13 @@ public class Main : Node2D
 				SetAnimation(player, "block");
 				message = "Защита: удерживайте кнопку блока.";
 				break;
+			case GameEventKind.EnemyDefeated:
+				defeatedEnemy = game.Enemy;
+				defeatAnimationFinished = !enemy.Frames.HasAnimation("defeat") || enemy.Frames.GetFrameCount("defeat") == 0 || enemy.Frames.GetAnimationSpeed("defeat") <= 0 || enemy.SpeedScale <= 0;
+
+				enemyHurt = enemyPose = 0;
+				if (!defeatAnimationFinished) { enemy.Play("defeat"); enemy.Frame = 0; }
+				return;
 			case GameEventKind.EnemyHurt:
 				enemyFlash = 0.18f;
 				enemyPose = 0;
@@ -248,8 +369,9 @@ public class Main : Node2D
 				else if (action.Blocked) message = "Блок: атака отражена!";
 				else { flash = 0.18f; message = "Враг нанёс " + action.Damage + " урона."; }
 				break;
+			case GameEventKind.EnemyTargetChanged:
 			case GameEventKind.EnemySpawned:
-				enemy.Frames = enemyAnimations[game.Enemy.Name];
+				SyncEnemySprites();
 				enemyAction = "attack";
 				enemyHurt = enemyPose = enemyFlash = 0;
 				enemy.Modulate = enemyColor;
@@ -260,6 +382,9 @@ public class Main : Node2D
 			case GameEventKind.AttackCancelled:
 				if (!game.IsAttacking) pose = 0;
 				message = game.IsAttacking ? "Атака отменена: текущий удар будет завершён." : "Атака прервана.";
+				break;
+			case GameEventKind.BattleCompleted:
+				message = "Бой завершён: все противники побеждены.";
 				break;
 			case GameEventKind.GameOver:
 				message = "Вы проиграли. Нажмите R для новой игры.";
@@ -411,7 +536,7 @@ public class Main : Node2D
 		if (Godot.Object.IsInstanceValid(staminaLabel)) staminaLabel.Text = game.Stamina.ToString("0", System.Globalization.CultureInfo.InvariantCulture) + "/" + game.MaxStamina.ToString("0", System.Globalization.CultureInfo.InvariantCulture);
 		if (Godot.Object.IsInstanceValid(enemyStatus))
 		{
-			enemyStatus.Text = game.EnemyHealth <= 0 ? "ПОБЕДА! +10 монет" : "ВРАГ " + game.Wave + "  •  " + game.EnemyHealth + "/" + game.EnemyMaxHealth + (game.EnemyWarning ? "   ⚠ АТАКУЕТ!" : "");
+			enemyStatus.Text = game.BattleFinished ? "ПОБЕДА! +10 монет" : "ВРАГ " + game.Wave + "  •  " + game.EnemyHealth + "/" + game.EnemyMaxHealth + (game.EnemyWarning ? "   ⚠ АТАКУЕТ!" : "");
 			enemyStatus.Modulate = game.EnemyWarning ? new Color("ff8a5b") : Colors.White;
 		}
 		if (Godot.Object.IsInstanceValid(status)) status.Text = message;

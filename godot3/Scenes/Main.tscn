@@ -70,6 +70,24 @@ centered = false
 
 [node name="Combatants" type="Node2D" parent="."]
 
+[node name="Enemy2" type="AnimatedSprite" parent="Combatants"]
+position = Vector2( 742, 217 )
+frames = ExtResource( 11 )
+animation = "idle"
+playing = true
+
+[node name="Enemy3" type="AnimatedSprite" parent="Combatants"]
+position = Vector2( 877, 292 )
+frames = ExtResource( 11 )
+animation = "idle"
+playing = true
+
+[node name="Enemy4" type="AnimatedSprite" parent="Combatants"]
+position = Vector2( 1063, 241 )
+frames = ExtResource( 11 )
+animation = "idle"
+playing = true
+
 [node name="Enemy" type="AnimatedSprite" parent="Combatants"]
 position = Vector2( 595.2, 286.2 )
 frames = ExtResource( 11 )
