@@ -326,7 +326,10 @@ public class Main : Node2D
 			return;
 		}
 		// Receive release even if a Control consumes the key event.
-		if (inputEvent is InputEventKey punchKey && punchKey.Scancode == (uint)KeyList.Slash && !punchKey.Pressed)
+		if (inputEvent is InputEventKey punchKey 
+			&& (punchKey.Scancode == (uint)KeyList.Slash
+            || punchKey.Scancode == (uint)KeyList.Space)
+            && !punchKey.Pressed)
 		{
 			punchKeyHeld = false;
 			CancelReleasedMeleeAttack();
