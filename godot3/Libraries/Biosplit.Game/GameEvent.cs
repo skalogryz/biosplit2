@@ -5,7 +5,7 @@ namespace Biosplit.Game
     public enum GameEventKind
     {
         Punch, Shot, Dodge, BlockStarted, BlockEnded, EnemyAttacked,
-        EnemyHurt, EnemyDefeated, EnemySpawned, InventoryChanged, Healed, GameOver, AttackStarted, AttackCancelled, AttackCompleted, ApproachStarted, SeparationStarted, SeparationCompleted, StrikeStarted
+        EnemyHurt, EnemyDefeated, EnemySpawned, InventoryChanged, Healed, GameOver, AttackStarted, AttackCancelled, AttackCompleted, ApproachStarted, SeparationStarted, SeparationCompleted, StrikeStarted, EnemyTargetChanged, BattleCompleted
     }
 
     public sealed class GameEvent : EventArgs

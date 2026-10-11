@@ -16,6 +16,8 @@ namespace Biosplit.Game
         private sealed class Attack
         {
             public WeaponItem Item;
+            public Character Attacker;
+            public Character Target;
             public bool EnemyAttacker;
             public bool Approaching;
             public decimal MovementElapsed;
@@ -96,7 +98,24 @@ namespace Biosplit.Game
             private set => Player.blocking = value;
         }
         public bool Dodging => dodgeRemaining > 0m;
-        public bool GameOver => Health == 0;
+        public bool GameOver => Player.isDefeated;
+        public bool BattleFinished => FirstLivingEnemy() == null;
+
+        private Character FirstLivingEnemy()
+        {
+            foreach (var character in characters)
+                if (character.EnemySettings != null && !character.isDefeated) return character;
+            return null;
+        }
+
+        private void RefreshEnemyTarget()
+        {
+            var next = FirstLivingEnemy();
+            if (next == null || next == Enemy) return;
+            Enemy = next;
+            enemyClock = 0m;
+            Emit(GameEventKind.EnemyTargetChanged);
+        }
         public bool InventoryOpen { get; private set; }
         public bool Paused => InventoryOpen || GameOver;
         public int MaxHealth => settings.MaxHealth;
@@ -121,8 +140,8 @@ namespace Biosplit.Game
         public AttackResult GetAttackStartResult(WeaponItem weapon) => GetAttackStartResult(Player, weapon);
         public AttackResult GetAttackStartResult(Character attacker, WeaponItem weapon)
         {
-            if (attacker != Player && attacker != Enemy) return AttackResult.UnsupportedAttacker;
-            bool enemyAttacker = attacker == Enemy;
+            if (attacker != Player && attacker != FirstLivingEnemy()) return AttackResult.UnsupportedAttacker;
+            bool enemyAttacker = attacker != Player;
             if (weapon == null) return AttackResult.NoWeapon;
             var definition = weapon.Definition;
             if (definition.Type != WeaponType.Melee && definition.Type != WeaponType.Firearm)
@@ -130,7 +149,7 @@ namespace Biosplit.Game
             if (GameOver) return AttackResult.GameOver;
             if (InventoryOpen) return AttackResult.InventoryOpen;
             if (!enemyAttacker && Blocking) return AttackResult.Blocking;
-            if (EnemyHealth <= 0) return AttackResult.NoEnemy;
+            if (BattleFinished) return AttackResult.NoEnemy;
             if (IsAttacking) return AttackResult.AttackInProgress;
             if (separating && definition.Type == WeaponType.Melee) return AttackResult.Separating;
             if (weapon.Cooldown > 0m) return AttackResult.WeaponOnCooldown;
@@ -139,7 +158,7 @@ namespace Biosplit.Game
             if (!enemyAttacker && Stamina < Math.Max(0m, definition.StaminaCost)) return AttackResult.InsufficientStamina;
             return AttackResult.Success;
         }
-        public bool CanDodge => !Paused && !Blocking && !Dodging && EnemyHealth > 0 && Stamina >= settings.DodgeStamina;
+        public bool CanDodge => !Paused && !Blocking && !Dodging && !BattleFinished && Stamina >= settings.DodgeStamina;
         public bool CanHeal => InventoryOpen && !GameOver && Kits > 0 && Health < MaxHealth;
 
         public void Tick(decimal seconds)
@@ -148,22 +167,23 @@ namespace Biosplit.Game
             if (GameOver) { AdvanceSeparation(seconds); return; }
             bool killedByAttack = AdvanceAttackAndItems(seconds);
             if (killedByAttack) return;
-            if (EnemyHealth <= 0)
+            if (BattleFinished)
             {
-                if (IsAttacking) return;
+                if (IsAttacking || separating) return;
                 respawnRemaining -= seconds;
                 if (respawnRemaining <= 0m)
                 {
                     Wave++;
-                    int characterIndex = characters.IndexOf(Enemy);
+                    characters.RemoveAll(character => character.EnemySettings != null && character.isDefeated);
                     Enemy = Character.AllocEnemy(enemyLibrary[enemyRandom.Next(enemyLibrary.Count)]);
-                    characters[characterIndex] = Enemy;
+                    characters.Add(Enemy);
                     enemyClock = 0m;
                     Emit(GameEventKind.EnemySpawned);
                 }
                 return;
             }
             if (IsAttacking || separating) return;
+            RefreshEnemyTarget();
             if (seconds < Enemy.EnemySettings.AttackInterval - enemyClock)
             {
                 enemyClock += seconds;
@@ -180,6 +200,7 @@ namespace Biosplit.Game
         {
             var result = GetAttackStartResult(attacker, weapon);
             if (result != AttackResult.Success) return result;
+            RefreshEnemyTarget();
             var definition = weapon.Definition.Copy();
             if (attacker == Player)
             {
@@ -189,8 +210,10 @@ namespace Biosplit.Game
             var attack = new Attack
             {
                 Item = weapon,
+                Attacker = attacker,
+                Target = attacker == Player ? FirstLivingEnemy() : Player,
                 Definition = definition,
-                EnemyAttacker = attacker == Enemy,
+                EnemyAttacker = attacker != Player,
                 Approaching = definition.Type == WeaponType.Melee,
                 MovementStart = attacker == Enemy ? EnemyMeleePos : HeroPos,
                 MovementTarget = attacker == Enemy ? HeroPos + settings.EnemyMeleeSize : EnemyMeleePos - settings.EnemyMeleeSize
@@ -253,7 +276,7 @@ namespace Biosplit.Game
         private void FinishStrike(Attack attack)
         {
             if (activeAttack != attack) return;
-            if (!attack.CancellationRequested && EnemyHealth > 0 && attack.Item.CurrentStrikeIndex + 1 < attack.Definition.Striker.Length)
+            if (!attack.CancellationRequested && !attack.Target.isDefeated && attack.Item.CurrentStrikeIndex + 1 < attack.Definition.Striker.Length)
             {
                 attack.Item.CurrentStrikeIndex++;
                 BeginStrike(attack);
@@ -278,9 +301,9 @@ namespace Biosplit.Game
                 if (GameOver) { CancelAttack(isInterrupt: true); Emit(GameEventKind.GameOver); }
                 return;
             }
-            attack.DamageDealt = (int)Math.Min(int.MaxValue, (long)attack.DamageDealt + Math.Min(EnemyHealth, damage));
+            attack.DamageDealt = (int)Math.Min(int.MaxValue, (long)attack.DamageDealt + Math.Min(attack.Target.health, damage));
             Rage = (int)Math.Min(MaxRage, (long)Rage + Math.Max(0, attack.Definition.RageBonus));
-            if (damage > 0) HurtEnemy(damage);
+            if (damage > 0 && !attack.Target.isDefeated) HurtEnemy(attack.Target, damage);
         }
 
         private bool AdvanceAttackAndItems(decimal seconds)
@@ -323,9 +346,9 @@ namespace Biosplit.Game
                 attack.UntilDamage = Math.Max(0m, attack.UntilDamage - elapsed);
                 if (!attack.DamageApplied && attack.UntilDamage == 0m)
                 {
-                    int healthBefore = EnemyHealth;
+                    int healthBefore = attack.Target.health;
                     ApplyAttackDamage(attack);
-                    killed |= healthBefore > 0 && EnemyHealth == 0;
+                    killed |= !attack.EnemyAttacker && healthBefore > 0 && attack.Target.isDefeated;
                 }
                 if (activeAttack == attack && attack.Remaining == 0m) FinishStrike(attack);
             }
@@ -364,16 +387,17 @@ namespace Biosplit.Game
             return true;
         }
 
-        private void HurtEnemy(int damage)
+        private void HurtEnemy(Character target, int damage)
         {
-            EnemyHealth = Math.Max(0, EnemyHealth - damage);
+            target.health = Math.Max(0, target.health - damage);
             Emit(GameEventKind.EnemyHurt, damage);
-            if (EnemyHealth != 0) return;
+            if (!target.isDefeated) return;
             Coins += 10;
             if (Wave % 3 == 0) Kits++;
-            respawnRemaining = 0.9m;
+            if (BattleFinished) respawnRemaining = 0.9m;
             enemyClock = 0m;
             Emit(GameEventKind.EnemyDefeated);
+            if (BattleFinished) Emit(GameEventKind.BattleCompleted);
         }
 
         private IEnumerable<WeaponItem> CarriedWeapons()
@@ -402,7 +426,7 @@ namespace Biosplit.Game
         }
         private void EmitAttackEvent(GameEventKind kind, Attack attack)
             => Changed?.Invoke(this, new GameEvent(kind, weapon: attack.Item,
-                attacker: attack.EnemyAttacker ? Enemy : Player,
+                attacker: attack.Attacker,
                 strikeIndex: attack.Item.CurrentStrikeIndex,
                 strikeName: attack.Item.CurrentStrikeIndex < 0 ? null : attack.Definition.Striker[attack.Item.CurrentStrikeIndex].Name));
 

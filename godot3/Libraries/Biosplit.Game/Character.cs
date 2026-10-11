@@ -18,6 +18,7 @@ namespace Biosplit.Game
             return character;
         }
         public int health;
+        public bool isDefeated => health <= 0;
         public decimal stamina;
         public int rage;
         public bool blocking;
