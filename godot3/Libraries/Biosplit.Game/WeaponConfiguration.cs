@@ -50,6 +50,7 @@ namespace Biosplit.Game
             int attackDuration = ini.GetInt(section, "attackduration", weapon.AttackDurationMs);
             if (attackDuration >= 0) weapon.AttackDurationMs = attackDuration;
             weapon.Striker = ReadStrikes(ini, section, warning);
+            weapon.HasAimedShot = ini.GetInt(section, "aim", 0) > 0;
             return weapon;
         }
         private static StrikeSettings[] ReadStrikes(IniDocument ini, string section, Action<string> warning)

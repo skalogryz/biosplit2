@@ -17,6 +17,8 @@ namespace Biosplit.Game
                 character.Inventory.Weapon1 = new WeaponItem(settings.Weapon0Settings);
             return character;
         }
+        public int level = 1;
+
         public int health;
         public bool isDefeated => health <= 0;
         public decimal stamina;

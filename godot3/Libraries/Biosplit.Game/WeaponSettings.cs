@@ -12,6 +12,9 @@ namespace Biosplit.Game
         public int CooldownMs { get; set; }
         public int AttackDurationMs { get; set; }
         private StrikeSettings[] striker = new[] { new StrikeSettings() };
+
+        public bool HasAimedShot;
+
         public StrikeSettings[] Striker
         {
             get => striker;
