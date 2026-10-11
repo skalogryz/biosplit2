@@ -444,3 +444,6 @@ export_credentials.cfg
 .mono/
 data_*/
 mono_crash.*.json
+
+# I keep the Windows builds there 
+Build/
