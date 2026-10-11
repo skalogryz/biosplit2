@@ -53,7 +53,7 @@ namespace Biosplit.Game
             this.settings = (settings ?? throw new ArgumentNullException(nameof(settings))).NormalizedCopy();
             this.enemyRandom = enemyRandom ?? new Random();
             enemyLibrary = new List<EnemySettings>(this.settings.Enemies.Values);
-            Player = new Character("hero");
+            Player = new Character("hero") { maxStamina = this.settings.MaxStamina };
             characters.Add(Player);
             if (enemyName != null)
             {
@@ -154,7 +154,7 @@ namespace Biosplit.Game
         public bool Paused => InventoryOpen || GameOver;
         public int MaxHealth => settings.MaxHealth;
         public int MaxRage => settings.MaxRage;
-        public decimal MaxStamina => settings.MaxStamina;
+        public decimal MaxStamina => Player.maxStamina;
         public int EnemyMaxHealth => Enemy.EnemySettings.Health;
         public int RagePointStep => Math.Max(1, MaxRage / 10);
         public int RagePerPunch => Math.Max(0, Player.Inventory.Weapon1?.Definition.RageBonus ?? 0);

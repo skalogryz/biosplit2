@@ -20,6 +20,7 @@ namespace Biosplit.Game
         public int health;
         public bool isDefeated => health <= 0;
         public decimal stamina;
+        public decimal maxStamina = 100m;
         public int rage;
         public bool blocking;
         public string Name { get; }
