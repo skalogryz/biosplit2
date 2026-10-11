@@ -451,7 +451,7 @@ public class Main : Node2D
 		StaminaGrow = settings.StaminaGrow;
 		DodgeStamina = settings.DodgeStamina;
 		DodgeTimeMs = settings.DodgeTimeMs;
-		EnemyDamage = settings.EnemyDamage;
+		EnemyDamage = settings.EnemyDamage.Min;
 		EnemyHealth = settings.EnemyHealth;
 		EnemyAttackInterval = (float)settings.EnemyAttackInterval;
 		EnemyWarningTime = (float)settings.EnemyWarningTime;
