@@ -85,3 +85,9 @@ AttackResult: Success, NoWeapon, UnsupportedWeaponType, GameOver, InventoryOpen,
     AttackResult result = game.StartAttack(game.Player.Inventory.Weapon1);
     if (result == AttackResult.WeaponOnCooldown)
         Console.WriteLine("Оружие ещё не готово");
+
+Урон оружия и противников хранится в структуре DamageRange с целочисленными Min и Max.
+В INI параметр damage поддерживает фиксированное значение (damage=5), диапазон через дефис (damage=1-5) и через две точки (damage=1..5).
+Границы неотрицательны, Min не превышает Max. Некорректная запись сохраняет прежнее значение и выдаёт предупреждение.
+При нанесении каждого страйка выбирается случайный базовый урон с включёнными границами, затем применяется DamageModifier.
+При DamageModifier=0 используется AbsoluteDamage. Диапазон EnemySettings.Damage переносится в автоматически созданное оружие врага; для weapon0 используется damage из секции самого оружия.
