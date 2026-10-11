@@ -74,7 +74,7 @@ namespace Biosplit.Game
                     var framed = ReadFramedStrike(framedValue);
                     if (framed == null)
                     {
-                        warning?.Invoke("Invalid [" + section + "] " + framedKey + ": expected optional positive FPS, frame names and exactly one * marker. Strike sequence stopped.");
+                        warning?.Invoke("Invalid [" + section + "] " + framedKey + ": expected optional positive FPS, frame names and at most one * marker. Strike sequence stopped.");
                         break;
                     }
                     strikes.Add(framed);
@@ -123,7 +123,14 @@ namespace Biosplit.Game
                 if (frame == "*") markers++;
                 frames[i - start] = frame;
             }
-            if (markers != 1) return null;
+            if (frames.Length == 0 || markers > 1) return null;
+            if (markers == 0)
+            {
+                var markedFrames = new string[frames.Length + 1];
+                markedFrames[0] = "*";
+                Array.Copy(frames, 0, markedFrames, 1, frames.Length);
+                frames = markedFrames;
+            }
             // Animation creation and phase timing are left to a future Godot normalization step.
             return new StrikeSettings { FrameNames = frames, FramesPerSecond = fps, DamageDurationMs = 25 };
         }
