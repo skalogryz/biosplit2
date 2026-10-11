@@ -1,4 +1,4 @@
-[gd_scene load_steps=32 format=2]
+[gd_scene load_steps=33 format=2]
 
 [ext_resource path="res://Scripts/Main.cs" type="Script" id=1]
 [ext_resource path="res://Assets/Fonts/NotoSans-Regular.ttf" type="DynamicFontData" id=2]
@@ -25,6 +25,7 @@
 [ext_resource path="res://Scenes/DeveloperSettings.tscn" type="PackedScene" id=23]
 [ext_resource path="res://Assets/UI/Btn_shot_pricel_01.png" type="Texture" id=24]
 [ext_resource path="res://Scenes/CharacterStatusMain.tscn" type="PackedScene" id=25]
+[ext_resource path="res://Scenes/AimedTargetSelection.tscn" type="PackedScene" id=26]
 
 [sub_resource type="DynamicFont" id=1]
 font_data = ExtResource( 2 )
@@ -301,6 +302,8 @@ value = 80.0
 percent_visible = false
 
 [node name="Inventory" parent="UI/HUD" instance=ExtResource( 15 )]
+
+[node name="AimedTargetSelection" parent="UI/HUD" instance=ExtResource( 26 )]
 
 [node name="Node2D" type="Node2D" parent="UI/HUD"]
 
