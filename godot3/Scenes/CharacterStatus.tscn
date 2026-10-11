@@ -1,4 +1,4 @@
-[gd_scene load_steps=6 format=2]
+[gd_scene load_steps=7 format=2]
 
 [ext_resource path="res://Scripts/CharacterStatus.cs" type="Script" id=1]
 [ext_resource path="res://Assets/Fonts/NotoSans-Regular.ttf" type="DynamicFontData" id=2]
@@ -13,12 +13,19 @@ bg_color = Color( 0.811765, 0.811765, 0.811765, 1 )
 [sub_resource type="StyleBoxFlat" id=3]
 bg_color = Color( 0.125, 0.161, 0.188, 1 )
 
+[sub_resource type="DynamicFont" id=4]
+size = 11
+font_data = ExtResource( 2 )
+
 [node name="CharacterStatus" type="Node2D"]
 script = ExtResource( 1 )
+NameLabelPath = NodePath("NameLabel")
+LevelLabelPath = NodePath("LevelLabel")
+HealthBarPath = NodePath("HealthBar")
 Offset = Vector2( 0, 0 )
 
 [node name="NameLabel" type="Label" parent="."]
-margin_left = -64.0
+margin_left = -40.0
 margin_top = -150.0
 margin_right = 66.0
 margin_bottom = -131.0
@@ -26,7 +33,7 @@ custom_fonts/font = SubResource( 1 )
 text = "Character"
 
 [node name="HealthBar" type="ProgressBar" parent="."]
-margin_left = -63.0
+margin_left = -40.0
 margin_top = -128.0
 margin_right = 67.0
 margin_bottom = -118.0
@@ -35,3 +42,15 @@ custom_styles/fg = SubResource( 2 )
 custom_styles/bg = SubResource( 3 )
 value = 100.0
 percent_visible = false
+
+[node name="LevelLabel" type="Label" parent="."]
+margin_left = -64.0
+margin_top = -131.0
+margin_right = -42.0
+margin_bottom = -115.0
+custom_colors/font_color = Color( 0.811765, 0.811765, 0.811765, 1 )
+custom_fonts/font = SubResource( 4 )
+custom_styles/normal = SubResource( 3 )
+text = "1"
+align = 1
+valign = 1

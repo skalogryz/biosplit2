@@ -4,11 +4,15 @@ using System;
 
 public class CharacterStatus : Node2D
 {
+	[Export] public NodePath NameLabelPath;
+	[Export] public NodePath LevelLabelPath;
+	[Export] public NodePath HealthBarPath;
 	[Export] public Vector2 Offset = new Vector2(0, -100);
 	private Character character;
 	private Node2D anchor;
 	private int initialMaxHealth = 1;
 	private Label nameLabel;
+	private Label levelLabel;
 	private ProgressBar healthBar;
 
 	public Character Character
@@ -39,8 +43,9 @@ public class CharacterStatus : Node2D
 	public override void _Ready()
 	{
 		SetAsToplevel(true);
-		nameLabel = GetNode<Label>("NameLabel");
-		healthBar = GetNode<ProgressBar>("HealthBar");
+		nameLabel = Resolve<Label>(NameLabelPath);
+		levelLabel = Resolve<Label>(LevelLabelPath);
+		healthBar = Resolve<ProgressBar>(HealthBarPath);
 		UpdateView();
 	}
 	public override void _Process(float delta) => UpdateView();
@@ -50,9 +55,17 @@ public class CharacterStatus : Node2D
 		bool hasAnchor = Godot.Object.IsInstanceValid(anchor);
 		Visible = character != null && (anchor == null || hasAnchor && anchor.IsVisibleInTree());
 		if (hasAnchor) GlobalPosition = anchor.GlobalPosition + Offset;
-		if (nameLabel == null || healthBar == null) return;
-		nameLabel.Text = character?.Name ?? "";
-		healthBar.MaxValue = Math.Max(1, character?.EnemySettings?.Health ?? initialMaxHealth);
-		healthBar.Value = Math.Max(0, character?.health ?? 0);
+		if (Godot.Object.IsInstanceValid(nameLabel))
+			nameLabel.Text = character?.Name ?? "";
+		if (Godot.Object.IsInstanceValid(levelLabel))
+			levelLabel.Text = character?.level.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "";
+		if (Godot.Object.IsInstanceValid(healthBar))
+		{
+			healthBar.MaxValue = Math.Max(1, character?.EnemySettings?.Health ?? initialMaxHealth);
+			healthBar.Value = Math.Max(0, character?.health ?? 0);
+		}
 	}
+
+	private T Resolve<T>(NodePath path) where T : Node
+		=> path == null || path.IsEmpty() ? null : GetNodeOrNull<Node>(path) as T;
 }
