@@ -29,6 +29,11 @@ namespace Biosplit.Game
                     if (health > 0) enemy.Health = health;
                     if (ini.TryGetInt(section, "cooldown", out int milliseconds) && milliseconds > 0)
                         enemy.CooldownMs = milliseconds;
+                    enemy.FIdle = ReadAnimation(ini, section, "fidle", enemy.FIdle, warning);
+                    enemy.FBlock = ReadAnimation(ini, section, "fblock", enemy.FBlock, warning);
+                    enemy.FHurt = ReadAnimation(ini, section, "fhurt", enemy.FHurt, warning);
+                    enemy.FDefeat = ReadAnimation(ini, section, "fdefeat", enemy.FDefeat, warning);
+                    enemy.FAttack = ReadAnimation(ini, section, "fattack", enemy.FAttack, warning);
                     string weaponName = ini.GetString(section, "weapon0", enemy.Weapon0)?.Trim();
                     enemy.Weapon0 = null;
                     enemy.Weapon0Settings = null;
@@ -54,6 +59,16 @@ namespace Biosplit.Game
             {
                 warning?.Invoke("Cannot read enemy.ini: " + error.Message);
             }
+        }
+        private static FrameAnimationSettings ReadAnimation(IniDocument ini, string section, string key,
+            FrameAnimationSettings fallback, Action<string> warning)
+        {
+            string value = ini.GetString(section, key);
+            if (value == null) return fallback;
+            var animation = FrameAnimationSettings.Parse(value);
+            if (animation == null)
+                warning?.Invoke("Invalid [" + section + "] " + key + ": expected optional positive FPS and frame names without *.");
+            return animation ?? fallback;
         }
     }
 }
