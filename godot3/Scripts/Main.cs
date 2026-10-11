@@ -58,9 +58,12 @@ public class Main : Node2D
 		public Vector2 Origin;
 		public Color Color;
 		public int ZIndex;
+		public float Hurt, Flash;
 	}
 	private readonly System.Collections.Generic.List<EnemySlot> enemySlots = new System.Collections.Generic.List<EnemySlot>();
 	private Line2D shotTrail;
+	private AimedTargetSelection aimedSelection;
+	private Character shotTarget;
 	private Vector2 playerOrigin, enemyOrigin, backgroundOrigin;
 	private Color playerColor, enemyColor;
 	private int combatBackZ, combatFrontZ;
@@ -154,7 +157,7 @@ public class Main : Node2D
 			BindActionButton(DodgeButtonPath, nameof(Dodge), nameof(DodgeButtonPath)),
 			BindActionButton(BlockButtonPath, nameof(Block), nameof(BlockButtonPath)),
 			BindActionButton(InventoryButtonPath, nameof(ToggleInventory), nameof(InventoryButtonPath)),
-			BindActionButton(AimedShotButtonPath, nameof(Shoot), nameof(AimedShotButtonPath))
+			BindActionButton(AimedShotButtonPath, nameof(AimedShot), nameof(AimedShotButtonPath))
 		};
 		if (actions[0] != null && !actions[0].IsConnected("released", this, nameof(ReleasePunch)))
 			actions[0].Connect("released", this, nameof(ReleasePunch));
@@ -176,6 +179,9 @@ public class Main : Node2D
 		var settingsButton = Optional<TouchScreenButton>(SettingsButtonPath);
 		if (Godot.Object.IsInstanceValid(settingsButton) && !settingsButton.IsConnected("pressed", this, nameof(ToggleDeveloperSettings)))
 			settingsButton.Connect("pressed", this, nameof(ToggleDeveloperSettings));
+		aimedSelection = GetNode<AimedTargetSelection>("UI/HUD/AimedTargetSelection");
+		aimedSelection.Selected += ShootSelectedTarget;
+		aimedSelection.Cancelled += CancelAimedShot;
 		game.Changed += OnGameChanged;
 		Render();
 	}
@@ -190,12 +196,18 @@ public class Main : Node2D
 		UpdateMappedInput();
 		if (!game.Paused)
 		{
+			foreach (var slot in enemySlots)
+			{
+				slot.Hurt = Mathf.Max(0, slot.Hurt - delta);
+				slot.Flash = Mathf.Max(0, slot.Flash - delta);
+			}
 			pose = Mathf.Max(0, pose - delta);
 			enemyPose = Mathf.Max(0, enemyPose - delta);
 			enemyHurt = Mathf.Max(0, enemyHurt - delta);
 			flash = Mathf.Max(0, flash - delta);
 			enemyFlash = Mathf.Max(0, enemyFlash - delta);
 		}
+		if (aimedSelection.IsSelecting && (game.Paused || game.EnemyTransitionPending || game.State == GameState.EnemyRotation)) CancelAimedShot();
 		game.Tick((decimal)delta);
 		if (!game.Paused) AdvanceEnemyRotation(delta);
 		if (punchTouchHeld || punchKeyHeld) TryMeleeAttack();
@@ -227,7 +239,10 @@ public class Main : Node2D
 		if (shotTrail.Visible)
 		{
 			shotTrail.SetPointPosition(0, player.Position + new Vector2(45, -25));
-			shotTrail.SetPointPosition(1, enemy.Position + new Vector2(-40, -25));
+			var targetSprite = enemy;
+			foreach (var slot in enemySlots)
+				if (slot.Character == shotTarget) { targetSprite = slot.Sprite; break; }
+			shotTrail.SetPointPosition(1, targetSprite.Position + new Vector2(-40, -25));
 		}
 		playerStaminaStatus?.UpdateView();
 		foreach (var slot in enemySlots) slot.Status?.UpdateView();
@@ -251,6 +266,7 @@ public class Main : Node2D
 			if (slot.Character != character)
 			{
 				slot.Character = character;
+				slot.Hurt = slot.Flash = 0;
 				ApplyEnemyAnimations(slot.Sprite, character);
 				slot.Sprite.Frame = 0;
 			}
@@ -263,9 +279,9 @@ public class Main : Node2D
 			else
 			{
 				slot.Sprite.Position = slot.Origin;
-				slot.Sprite.Modulate = slot.Color;
+				slot.Sprite.Modulate = DamageFlashEnabled && slot.Flash > 0 ? new Color("ff7777") : slot.Color;
 				slot.Sprite.ZIndex = slot.ZIndex;
-				SetAnimation(slot.Sprite, "idle");
+				SetAnimation(slot.Sprite, character.isDefeated ? "defeat" : slot.Hurt > 0 ? "hurt" : "idle");
 				slot.Sprite.Playing = !game.Paused;
 			}
 		}
@@ -273,7 +289,7 @@ public class Main : Node2D
 
 	public void OnEnemyAnimationFinished(AnimatedSprite actor)
 	{
-		if (defeatedEnemy != null && actor == enemy && actor.Animation == "defeat")
+		if (defeatedEnemy != null && IsDefeatedSprite(actor) && actor.Animation == "defeat")
 			defeatAnimationFinished = true;
 	}
 
@@ -288,13 +304,14 @@ public class Main : Node2D
 			foreach (var slot in enemySlots)
 			{
 				if (slot.Character == null || slot.Character.isDefeated) continue;
-				var target = enemySlots[destination++].Origin;
-				if (destination == 1) target.x = (float)game.EnemyInitialPos;
+				var destinationSlot = enemySlots[destination++];
+				var target = destinationSlot == slot ? slot.Sprite.Position : destinationSlot.Origin;
+				if (destination == 1 && destinationSlot != slot) target.x = (float)game.EnemyInitialPos;
 				enemyRotations.Add(new EnemyRotation { Sprite = slot.Sprite, Start = slot.Sprite.Position, Target = target });
 				SetAnimation(slot.Sprite, "idle");
 			}
 			if (!game.BeginEnemyRotation()) return;
-			enemy.Visible = false;
+			foreach (var slot in enemySlots) if (slot.Character == defeatedEnemy) slot.Sprite.Visible = false;
 			rotatingEnemies = true;
 			return;
 		}
@@ -367,6 +384,7 @@ public class Main : Node2D
 				break;
 			case GameEventKind.Shot:
 				shootingPose = true;
+				shotTarget = action.Target;
 				StartPlayerAnimation(StrikeAnimation(action, "shoot"));
 				pose = Mathf.Max(AnimationDuration(player, playerAction, 0.23f), (float)game.AttackRemaining);
 				message = "Выстрел! −" + Math.Max(0, action.Weapon?.Definition.RageCost ?? 0) + " ярости.";
@@ -382,20 +400,35 @@ public class Main : Node2D
 				message = "Защита: удерживайте кнопку блока.";
 				break;
 			case GameEventKind.EnemyDefeated:
-				defeatedEnemy = game.Enemy;
-				defeatAnimationFinished = !enemy.Frames.HasAnimation("defeat") || enemy.Frames.GetFrameCount("defeat") == 0 || enemy.Frames.GetAnimationSpeed("defeat") <= 0 || enemy.SpeedScale <= 0;
-
-				enemyHurt = enemyPose = 0;
-				if (!defeatAnimationFinished) { enemy.Play("defeat"); enemy.Frame = 0; }
+				CancelAimedShot();
+				defeatedEnemy = action.Target ?? game.Enemy;
+				var defeatedSlot = FindEnemySlot(defeatedEnemy);
+				var defeatedSprite = defeatedSlot?.Sprite;
+				defeatAnimationFinished = defeatedSprite == null || !defeatedSprite.Frames.HasAnimation("defeat")
+					|| defeatedSprite.Frames.GetFrameCount("defeat") == 0
+					|| defeatedSprite.Frames.GetAnimationSpeed("defeat") <= 0 || defeatedSprite.SpeedScale <= 0;
+				if (defeatedSlot != null) defeatedSlot.Hurt = defeatedSlot.Flash = 0;
+				if (defeatedEnemy == game.Enemy) enemyHurt = enemyPose = 0;
+				if (!defeatAnimationFinished) { defeatedSprite.Play("defeat"); defeatedSprite.Frame = 0; }
 				return;
 			case GameEventKind.EnemyHurt:
-				enemyFlash = 0.18f;
-				enemyPose = 0;
-				if (game.EnemyHealth > 0 && enemy.Frames.HasAnimation("hurt"))
+				var hurtCharacter = action.Target ?? game.Enemy;
+				var hurtSlot = FindEnemySlot(hurtCharacter);
+				if (hurtSlot != null)
 				{
-					enemyHurt = AnimationDuration(enemy, "hurt", 0.18f);
-					enemy.Play("hurt");
-					enemy.Frame = 0;
+					hurtSlot.Flash = 0.18f;
+					hurtSlot.Hurt = AnimationDuration(hurtSlot.Sprite, "hurt", 0.18f);
+					if (!hurtCharacter.isDefeated && hurtSlot.Sprite.Frames.HasAnimation("hurt"))
+					{
+						hurtSlot.Sprite.Play("hurt");
+						hurtSlot.Sprite.Frame = 0;
+					}
+					if (hurtCharacter == game.Enemy)
+					{
+						enemyFlash = hurtSlot.Flash;
+						enemyHurt = hurtSlot.Hurt;
+						enemyPose = 0;
+					}
 				}
 				return;
 			case GameEventKind.EnemyAttacked:
@@ -440,7 +473,7 @@ public class Main : Node2D
 
 	private void TryMeleeAttack()
 	{
-		if (game.IsAttacking || game.Paused || game.GameOver) return;
+		if (game.IsAttacking || game.Paused || game.GameOver || aimedSelection.IsSelecting) return;
 		var weapon = FindReadyWeapon(WeaponType.Melee);
 		if (weapon == null) return;
 		meleeAttackWeapon = weapon;
@@ -487,6 +520,11 @@ public class Main : Node2D
 		var focus = GetNode<Control>("UI/HUD").GetFocusOwner();
 		bool textFocused = focus is TextEdit || focus is LineEdit;
 		bool settingsOpen = developerSettings != null && developerSettings.Visible;
+		if (aimedSelection.IsSelecting)
+		{
+			if (Input.IsActionJustPressed("aimed_shot") || Input.IsActionJustPressed("ui_cancel")) CancelAimedShot();
+			return;
+		}
 		bool gameplayInput = !textFocused && !settingsOpen && !game.Paused;
 
 		bool meleeHeld = gameplayInput && Input.IsActionPressed("melee_attack");
@@ -506,7 +544,8 @@ public class Main : Node2D
 		}
 		if (!gameplayInput || game.Paused) return;
 		if (Input.IsActionJustPressed("melee_attack")) Punch();
-		if (Input.IsActionJustPressed("shoot") || Input.IsActionJustPressed("aimed_shot")) Shoot();
+		if (Input.IsActionJustPressed("shoot")) Shoot();
+		if (Input.IsActionJustPressed("aimed_shot")) AimedShot();
 		if (Input.IsActionJustPressed("dodge")) Dodge();
 	}
 	private static void SetAnimation(AnimatedSprite actor, string animation)
@@ -553,6 +592,46 @@ public class Main : Node2D
 	private T Optional<T>(NodePath path) where T : Node
 		=> path == null || path.IsEmpty() ? null : GetNodeOrNull<Node>(path) as T;
 
+	private EnemySlot FindEnemySlot(Character character)
+	{
+		foreach (var slot in enemySlots) if (slot.Character == character) return slot;
+		return null;
+	}
+	private bool IsDefeatedSprite(AnimatedSprite actor) => FindEnemySlot(defeatedEnemy)?.Sprite == actor;
+
+	public void AimedShot()
+	{
+		if (aimedSelection.IsSelecting) { CancelAimedShot(); return; }
+		int living = 0;
+		foreach (var character in game.Characters)
+			if (character.EnemySettings != null && !character.isDefeated) living++;
+		if (living == 1) { Shoot(); return; }
+		if (living == 0 || FindReadyWeapon(WeaponType.Firearm) == null) return;
+		var choices = new System.Collections.Generic.List<AimedTargetSelection.TargetArea>();
+		foreach (var slot in enemySlots)
+			if (slot.Character != null && !slot.Character.isDefeated && slot.Sprite.Visible)
+				choices.Add(new AimedTargetSelection.TargetArea { Character = slot.Character, Sprite = slot.Sprite });
+		aimedSelection.Open(choices);
+		punchTouchHeld = punchKeyHeld = false;
+		blockTouchHeld = blockKeyHeld = false;
+		game.SetBlocking(false);
+		Refresh();
+	}
+	private void CancelAimedShot()
+	{
+		if (aimedSelection == null) return;
+		aimedSelection.Close();
+		foreach (var button in actions)
+			if (Godot.Object.IsInstanceValid(button)) button.SetProcessInput(true);
+	}
+	private void ShootSelectedTarget(Character target)
+	{
+		CancelAimedShot();
+		var weapon = FindReadyWeapon(WeaponType.Firearm);
+		if (weapon != null) game.StartAttack(weapon, target);
+		Render();
+	}
+
 	private void Refresh()
 	{
 		if (Godot.Object.IsInstanceValid(healthLabel)) healthLabel.Text = $"{game.Health}/{game.MaxHealth}";
@@ -578,6 +657,8 @@ public class Main : Node2D
 		SetButtonEnabled(actions[4], !game.GameOver);
 		if (Godot.Object.IsInstanceValid(inventoryText)) inventoryText.Text = "ИНВЕНТАРЬ\n\nМонеты: " + game.Coins + "\nАптечки: " + game.Kits + "\nБой приостановлен";
 		heal.Disabled = !game.CanHeal;
+		foreach (var button in actions)
+			if (Godot.Object.IsInstanceValid(button)) button.SetProcessInput(!aimedSelection.IsSelecting);
 	}
 
 	private GameSettings CreateSettings() => new GameSettings
