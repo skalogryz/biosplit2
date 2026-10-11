@@ -50,6 +50,7 @@ script = ExtResource( 1 )
 DamageFlashEnabled = false
 PunchButtonPath = NodePath("UI/HUD/Node2D/MeleeButton")
 ShootButtonPath = NodePath("UI/HUD/Node2D/ShootButton")
+AimedShotButtonPath = NodePath("UI/HUD/Node2D/AimedShotButton")
 DodgeButtonPath = NodePath("UI/HUD/Node2D/DodgeButton")
 BlockButtonPath = NodePath("UI/HUD/Node2D/BlockButton")
 InventoryButtonPath = NodePath("UI/HUD/Node2D/InventoryButton2")

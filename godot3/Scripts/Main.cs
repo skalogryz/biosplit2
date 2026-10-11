@@ -22,6 +22,7 @@ public class Main : Node2D
 		// Drag the desired TouchScreenButton from the scene tree into each field.
 	[Export] public NodePath PunchButtonPath = new NodePath("");
 	[Export] public NodePath ShootButtonPath = new NodePath("");
+	[Export] public NodePath AimedShotButtonPath = new NodePath("");
 	[Export] public NodePath DodgeButtonPath = new NodePath("");
 	[Export] public NodePath BlockButtonPath = new NodePath("");
 	[Export] public NodePath InventoryButtonPath = new NodePath("");
@@ -68,7 +69,7 @@ public class Main : Node2D
 	private Label healthLabel, rageLabel, staminaLabel, status, enemyStatus, inventoryText;
 	private ProgressBar healthBar, rageBar, enemyBar;
 	private RageIndicator rageIndicator;
-	private TouchScreenButton[] actions = new TouchScreenButton[5];
+	private TouchScreenButton[] actions = new TouchScreenButton[6];
 	private InventoryScreen inventory;
 	private ConsoleScreen console;
 	private DeveloperSettingsScreen developerSettings;
@@ -152,7 +153,8 @@ public class Main : Node2D
 			BindActionButton(ShootButtonPath, nameof(Shoot), nameof(ShootButtonPath)),
 			BindActionButton(DodgeButtonPath, nameof(Dodge), nameof(DodgeButtonPath)),
 			BindActionButton(BlockButtonPath, nameof(Block), nameof(BlockButtonPath)),
-			BindActionButton(InventoryButtonPath, nameof(ToggleInventory), nameof(InventoryButtonPath))
+			BindActionButton(InventoryButtonPath, nameof(ToggleInventory), nameof(InventoryButtonPath)),
+			BindActionButton(AimedShotButtonPath, nameof(Shoot), nameof(AimedShotButtonPath))
 		};
 		if (actions[0] != null && !actions[0].IsConnected("released", this, nameof(ReleasePunch)))
 			actions[0].Connect("released", this, nameof(ReleasePunch));
@@ -569,6 +571,7 @@ public class Main : Node2D
 		SetButtonEnabled(actions[0], FindReadyWeapon(WeaponType.Melee) != null);
 		var firearm = FindReadyWeapon(WeaponType.Firearm);
 		SetButtonEnabled(actions[1], firearm != null);
+		SetButtonEnabled(actions[5], firearm != null);
 		if (actions[1] is TouchActionButton shootButton) shootButton.Text = "ВЫСТРЕЛ [']" + (firearm != null ? "  " + firearm.Definition.RageCost + " ЯР" : "");
 		SetButtonEnabled(actions[2], game.CanDodge);
 		SetButtonEnabled(actions[3], !game.GameOver);
