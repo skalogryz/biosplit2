@@ -1,4 +1,4 @@
-[gd_scene load_steps=30 format=2]
+[gd_scene load_steps=31 format=2]
 
 [ext_resource path="res://Scripts/Main.cs" type="Script" id=1]
 [ext_resource path="res://Assets/Fonts/NotoSans-Regular.ttf" type="DynamicFontData" id=2]
@@ -23,6 +23,7 @@
 [ext_resource path="res://Assets/Background/Back_02.png" type="Texture" id=21]
 [ext_resource path="res://Assets/Background/Back_04.png" type="Texture" id=22]
 [ext_resource path="res://Scenes/DeveloperSettings.tscn" type="PackedScene" id=23]
+[ext_resource path="res://Assets/UI/Btn_shot_pricel_01.png" type="Texture" id=24]
 
 [sub_resource type="DynamicFont" id=1]
 font_data = ExtResource( 2 )
@@ -311,6 +312,14 @@ script = ExtResource( 8 )
 [node name="ShootButton" type="TouchScreenButton" parent="UI/HUD/Node2D"]
 position = Vector2( 855, 365 )
 normal = ExtResource( 4 )
+shape_centered = false
+shape_visible = false
+script = ExtResource( 8 )
+
+[node name="AimedShotButton" type="TouchScreenButton" parent="UI/HUD/Node2D"]
+position = Vector2( 734, 442 )
+scale = Vector2( 1.15789, 1.15789 )
+normal = ExtResource( 24 )
 shape_centered = false
 shape_visible = false
 script = ExtResource( 8 )
